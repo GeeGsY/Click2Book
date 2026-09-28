@@ -1,0 +1,7 @@
+{
+  "name": "aragonshop",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

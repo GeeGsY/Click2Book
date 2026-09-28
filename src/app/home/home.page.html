@@ -1,0 +1,95 @@
+<ion-content class="ion-padding home-content" [fullscreen]="true">
+
+  <!-- 1. Profile + quick access -->
+  <div class="top-bar">
+    <button class="icon-btn" (click)="onProfile()" aria-label="Profile">
+      <ion-icon name="person-circle-outline"></ion-icon>
+    </button>
+    <button class="icon-btn" (click)="onQuickAccess()" aria-label="Notifications">
+      <ion-icon name="notifications-outline"></ion-icon>
+    </button>
+  </div>
+
+  <!-- 2. Search -->
+  <div class="search-row">
+    <div class="search-bar">
+      <ion-icon name="search-outline"></ion-icon>
+      <input
+        type="text"
+        placeholder="Search destinations, hotels, flights"
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+      />
+    </div>
+    <button class="filter-btn" (click)="onFilter()" aria-label="Filters">
+      <ion-icon name="options-outline"></ion-icon>
+    </button>
+  </div>
+
+  <!-- 3. Featured destination -->
+  <div class="featured-card" (click)="onFeaturedTap()" [style.background-image]="'url(' + featured.image + ')'">
+    <span class="featured-badge">{{ featured.badge }}</span>
+    <div class="featured-info">
+      <h2>{{ featured.name }}</h2>
+      <p class="featured-country">{{ featured.country }}</p>
+      <p class="featured-price">
+        <span class="price">{{ featured.price }}</span>
+        <span class="price-unit">/ person</span>
+      </p>
+    </div>
+    <span class="featured-arrow">
+      <ion-icon name="arrow-forward"></ion-icon>
+    </span>
+  </div>
+
+  4. Category filters
+  <p class="filter-label">Browse by</p>
+  <div class="categories-row">
+    <button
+      class="category-item"
+      *ngFor="let cat of categories"
+      (click)="onCategorySelect(cat)"
+      [class.active]="cat.id === activeCategory"
+    >
+      <span class="category-icon">
+        <ion-icon [name]="cat.icon"></ion-icon>
+      </span>
+      <span class="category-label">{{ cat.label }}</span>
+    </button>
+  </div>
+
+  <!-- 5. Destination cards -->
+  <div class="section-header">
+    <h2>Popular this week</h2>
+    <button class="see-all" (click)="onSeeAllPopular()">See all</button>
+  </div>
+
+  <div class="destination-grid">
+    <div class="destination-card" *ngFor="let dest of popularDestinations" (click)="onDestinationTap(dest)">
+      <div class="destination-image" [style.background-image]="'url(' + dest.image + ')'">
+        <button
+          class="favorite-btn"
+          (click)="onToggleFavorite(dest, $event)"
+          [attr.aria-label]="dest.favorite ? 'Remove from favorites' : 'Add to favorites'"
+        >
+          <ion-icon [name]="dest.favorite ? 'heart' : 'heart-outline'"></ion-icon>
+        </button>
+        <div class="rating-badge">
+          <ion-icon name="star"></ion-icon>
+          <span>{{ dest.rating }}</span>
+        </div>
+      </div>
+      <div class="destination-info">
+        <div class="destination-name-row">
+          <h3>{{ dest.name }}</h3>
+          <p class="destination-country">{{ dest.country }}</p>
+        </div>
+        <p class="destination-price">
+          <span class="price">{{ dest.price }}</span>
+          <span class="price-unit">/ person</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</ion-content>

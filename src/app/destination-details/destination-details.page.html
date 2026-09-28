@@ -1,0 +1,58 @@
+<ion-content class="details-content" [fullscreen]="true">
+  <div class="details-page">
+    <!-- 1. Back + contact -->
+    <div class="top-bar">
+      <button class="icon-btn" (click)="onBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <button class="icon-btn" (click)="onMessage()" aria-label="Message host">
+        <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- 2. Hero image -->
+    <div class="hero-image" [style.background-image]="'url(' + destination.heroImage + ')'"></div>
+
+    <!-- 3. Thumbnail previews -->
+    <div class="thumbnail-row">
+      <button
+        class="thumbnail"
+        *ngFor="let img of destination.thumbnails; let i = index"
+        [class.active]="i === activeImage"
+        (click)="onSelectThumbnail(i)"
+        [style.background-image]="'url(' + img + ')'"
+        [attr.aria-label]="'View photo ' + (i + 1)"
+      ></button>
+    </div>
+
+    <!-- 4. Title + rating -->
+    <div class="title-block">
+      <h1>{{ destination.name }}, {{ destination.country }}</h1>
+      <div class="rating-row">
+        <ion-icon name="star"></ion-icon>
+        <span class="rating-value">{{ destination.rating }}</span>
+        <span class="review-count">({{ destination.reviewCount | number }} reviews)</span>
+      </div>
+    </div>
+
+    <!-- 5. Info area: amenities + description -->
+    <div class="info-card">
+      <div class="amenities-row">
+        <div class="amenity" *ngFor="let a of amenities">
+          <ion-icon [name]="a.icon"></ion-icon>
+          <span>{{ a.label }}</span>
+        </div>
+      </div>
+      <p class="description">{{ destination.description }}</p>
+    </div>
+
+    <!-- 6. Booking action -->
+    <div class="action-bar">
+      <div class="action-price">
+        <span class="price">{{ destination.price }}</span>
+        <span class="price-unit">/ person</span>
+      </div>
+      <button class="book-btn" (click)="onBookNow()">Book now</button>
+    </div>
+  </div>
+</ion-content>  

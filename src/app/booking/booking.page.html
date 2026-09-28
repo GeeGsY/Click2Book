@@ -1,0 +1,67 @@
+<ion-content [fullscreen]="true" class="booking-page">
+  <div class="booking-shell">
+    <div class="top-bar">
+      <button class="icon-btn" type="button" aria-label="Back" (click)="goBack()">&#8592;</button>
+    </div>
+
+    <div class="stay-title">{{ destinationName }}</div>
+
+    <div class="date-header">
+      <div class="date-box">
+        <span class="label">Check in</span>
+        <input type="date" [(ngModel)]="checkIn" (ngModelChange)="onCheckInChange()" />
+      </div>
+      <div class="date-box">
+        <span class="label">Check out</span>
+        <input type="date" [(ngModel)]="checkOut" (ngModelChange)="onCheckOutChange()" />
+      </div>
+    </div>
+
+    <div class="calendar-panel">
+      <div class="month-row">
+        <button class="nav-btn" type="button" aria-label="Previous month" (click)="prevMonth()">&#8249;</button>
+        <span>{{ monthLabel }}</span>
+        <button class="nav-btn" type="button" aria-label="Next month" (click)="nextMonth()">&#8250;</button>
+      </div>
+
+      <div class="weekdays">
+        <span>Sun</span>
+        <span>Mon</span>
+        <span>Tue</span>
+        <span>Wed</span>
+        <span>Thu</span>
+        <span>Fri</span>
+        <span>Sat</span>
+      </div>
+
+      <div class="calendar-grid">
+        <button
+          *ngFor="let cell of calendarCells"
+          type="button"
+          [class]="dayClass(cell)"
+          [attr.aria-label]="cell.date | date: 'MMM d, y'"
+          (click)="onDayClick(cell)"
+        >{{ cell.day }}</button>
+      </div>
+    </div>
+
+    <div class="summary-box">
+      <div class="summary-row">
+        <span>Stay</span>
+        <strong>{{ staySummary }}</strong>
+      </div>
+      <div class="summary-row">
+        <span>Rate</span>
+        <strong>${{ nightlyRate }}/night</strong>
+      </div>
+      <div class="summary-row total">
+        <span>Total</span>
+        <strong>${{ totalCost }}</strong>
+      </div>
+    </div>
+
+    <button class="payment-btn" type="button" [disabled]="nights === 0" (click)="proceedToPayment()">
+      Proceed to payment
+    </button>
+  </div>
+</ion-content>

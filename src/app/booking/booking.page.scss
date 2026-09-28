@@ -1,0 +1,251 @@
+:host {
+  --booking-bg: #d8d8d8;
+  --box-bg: #b9b9b9;
+  --panel-bg: #d1d1d1;
+  --dark-text: #1a1a1a;
+  --muted-text: #6d6d6d;
+  --black-button: #1a1a1a;
+  --white: #f7f7f7;
+}
+
+ion-content.booking-page {
+  --background: var(--booking-bg);
+  --padding-top: 20px;
+  --padding-bottom: 24px;
+  --padding-start: 18px;
+  --padding-end: 18px;
+  background: var(--booking-bg);
+}
+
+.booking-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.stay-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dark-text);
+  text-align: center;
+  margin-top: -8px;
+}
+
+.top-bar {
+  display: flex;
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--dark-text);
+  background: var(--white);
+  color: var(--dark-text);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.icon-btn:hover {
+  opacity: 0.85;
+}
+
+.date-header {
+  display: flex;
+  gap: 14px;
+  margin-top: 0;
+}
+
+.date-box {
+  flex: 1;
+  background: var(--box-bg);
+  border-radius: 18px;
+  min-height: 76px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--dark-text);
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.date-box input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: var(--dark-text);
+  font-weight: 600;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.calendar-panel {
+  background: var(--panel-bg);
+  border-radius: 16px;
+  padding: 12px 10px 10px;
+}
+
+.month-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--dark-text);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.nav-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dark-text);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.nav-btn:active {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.weekdays {
+  margin-bottom: 4px;
+}
+
+.weekdays span {
+  text-align: center;
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--muted-text);
+  text-transform: uppercase;
+}
+
+.day {
+  border: none;
+  background: transparent;
+  color: var(--dark-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  width: 100%;
+  max-width: 34px;
+  max-height: 34px;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.day:not(.muted):hover {
+  background: rgba(24, 24, 24, 0.12);
+}
+
+.day.muted {
+  opacity: 0.38;
+}
+
+.day.selected {
+  background: rgba(24, 24, 24, 0.9);
+  color: var(--white);
+}
+
+.day.selected:hover {
+  background: rgba(24, 24, 24, 0.9);
+}
+
+.day.selected-range {
+  background: rgba(24, 24, 24, 0.65);
+  color: #fff;
+}
+
+.day.selected-range:hover {
+  background: rgba(24, 24, 24, 0.65);
+}
+
+.summary-box {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  padding: 12px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--dark-text);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.summary-row strong {
+  font-weight: 700;
+}
+
+.summary-row.total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  font-size: 1rem;
+}
+
+.payment-btn {
+  margin-top: auto;
+  width: 100%;
+  background: var(--black-button);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  min-height: 52px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.payment-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.payment-btn:not(:disabled):active {
+  opacity: 0.85;
+}
