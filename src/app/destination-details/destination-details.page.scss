@@ -231,3 +231,30 @@
     }
   }
 }
+
+
+// ---- Tablet / desktop ----
+@media (min-width: 768px) {
+  .details-page {
+    max-width: 720px;
+  }
+
+  .hero-image {
+    height: 380px;
+  }
+
+  .thumbnail-row .thumbnail {
+    height: 90px;
+  }
+
+  .title-block h1 {
+    font-size: 28px;
+  }
+
+  .action-bar {
+    margin: 0;
+    border: 1.5px solid var(--ink);
+    border-radius: 14px;
+    bottom: 16px;
+  }
+}

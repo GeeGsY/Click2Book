@@ -1,7 +1,9 @@
 <ion-content [fullscreen]="true" class="booking-page">
   <div class="booking-shell">
     <div class="top-bar">
-      <button class="icon-btn" type="button" aria-label="Back" (click)="goBack()">&#8592;</button>
+      <button class="icon-btn" type="button" aria-label="Back" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
     </div>
 
     <div class="stay-title">{{ destinationName }}</div>
@@ -52,11 +54,11 @@
       </div>
       <div class="summary-row">
         <span>Rate</span>
-        <strong>${{ nightlyRate }}/night</strong>
+        <strong>₱{{ nightlyRate | number }}/night</strong>
       </div>
       <div class="summary-row total">
         <span>Total</span>
-        <strong>${{ totalCost }}</strong>
+        <strong>₱{{ totalCost | number }}</strong>
       </div>
     </div>
 

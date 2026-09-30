@@ -1,97 +1,89 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/booking"></ion-back-button>
-    </ion-buttons>
-    <ion-title>Payment</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content [fullscreen]="true" class="ion-padding payment-page">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Payment</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <div class="payment-shell">
+    <!-- Back + profile -->
+    <div class="top-bar">
+      <button class="icon-btn" type="button" aria-label="Back" (click)="goBack()">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <ion-avatar>
+        <img src="https://ionicframework.com/docs/img/demos/avatar.svg" alt="User Avatar" />
+      </ion-avatar>
+    </div>
 
-  <!-- Profile / Avatar Icon -->
-  <div class="avatar-container">
-    <ion-avatar>
-      <img src="https://ionicframework.com/docs/img/demos/avatar.svg" alt="User Avatar" />
-    </ion-avatar>
-  </div>
+    <h1 class="page-title">Payment</h1>
 
-  <!-- Reservation & Booking Details Section -->
-  <ion-list lines="none" class="info-section">
-    <ion-item class="input-item">
-      <ion-label position="stacked">Selected Accommodation</ion-label>
-      <ion-input [value]="accommodationName" readonly></ion-input>
-    </ion-item>
+    <!-- Reservation & Booking Details Section -->
+    <ion-list lines="none" class="info-section">
+      <ion-item class="input-item">
+        <ion-label position="stacked">Selected Accommodation</ion-label>
+        <ion-input [value]="accommodationName" readonly></ion-input>
+      </ion-item>
 
-    <ion-item class="input-item">
-      <ion-label position="stacked">Booking Total</ion-label>
-      <ion-input [value]="bookingTotal" readonly></ion-input>
-    </ion-item>
+      <ion-item class="input-item total-item">
+        <ion-label position="stacked">Booking Total</ion-label>
+        <ion-input [value]="bookingTotal" readonly></ion-input>
+      </ion-item>
 
-    <ion-item class="input-item">
-      <ion-label position="stacked">Discount Code</ion-label>
-      <ion-input [(ngModel)]="discountCode" placeholder="PROMO10"></ion-input>
-    </ion-item>
+      <ion-item class="input-item">
+        <ion-label position="stacked">Discount Code</ion-label>
+        <ion-input [(ngModel)]="discountCode" placeholder="PROMO10"></ion-input>
+      </ion-item>
 
-    <!-- Card fields: number + CVV side by side -->
-    <div class="field-row" *ngIf="selectedPaymentMethod === 'card'">
-      <ion-item class="input-item half-width">
+      <!-- Card fields: number + CVV side by side -->
+      <div class="field-row" *ngIf="selectedPaymentMethod === 'card'">
+        <ion-item class="input-item half-width">
+          <ion-label position="stacked">{{ accountNumberLabel }}</ion-label>
+          <ion-input
+            [(ngModel)]="accountNumber"
+            (ionInput)="onAccountNumberInput($event)"
+            inputmode="numeric"
+            maxlength="19"
+            [placeholder]="accountNumberPlaceholder"
+          ></ion-input>
+        </ion-item>
+
+        <ion-item class="input-item half-width">
+          <ion-label position="stacked">CVV / Security Code</ion-label>
+          <ion-input [(ngModel)]="securityCode" type="password" inputmode="numeric" maxlength="4" placeholder="123"></ion-input>
+        </ion-item>
+      </div>
+
+      <!-- E-wallet / bank: single account field, no CVV -->
+      <ion-item class="input-item" *ngIf="selectedPaymentMethod !== 'card'">
         <ion-label position="stacked">{{ accountNumberLabel }}</ion-label>
         <ion-input
           [(ngModel)]="accountNumber"
           (ionInput)="onAccountNumberInput($event)"
           inputmode="numeric"
-          maxlength="19"
+          maxlength="16"
           [placeholder]="accountNumberPlaceholder"
         ></ion-input>
       </ion-item>
+    </ion-list>
 
-      <ion-item class="input-item half-width">
-        <ion-label position="stacked">CVV / Security Code</ion-label>
-        <ion-input [(ngModel)]="securityCode" type="password" inputmode="numeric" maxlength="4" placeholder="123"></ion-input>
-      </ion-item>
+    <!-- Payment Method Selection Section -->
+    <div class="payment-methods-section">
+      <ion-label class="section-label">Select Payment Method</ion-label>
+      <ion-segment mode="ios" [(ngModel)]="selectedPaymentMethod" (ionChange)="onPaymentMethodChange()" value="card">
+        <ion-segment-button value="ewallet">
+          <ion-label>E-Wallet</ion-label>
+        </ion-segment-button>
+
+        <ion-segment-button value="card">
+          <ion-label>Card</ion-label>
+        </ion-segment-button>
+
+        <ion-segment-button value="bank">
+          <ion-label>Bank</ion-label>
+        </ion-segment-button>
+      </ion-segment>
     </div>
 
-    <!-- E-wallet / bank: single account field, no CVV -->
-    <ion-item class="input-item" *ngIf="selectedPaymentMethod !== 'card'">
-      <ion-label position="stacked">{{ accountNumberLabel }}</ion-label>
-      <ion-input
-        [(ngModel)]="accountNumber"
-        (ionInput)="onAccountNumberInput($event)"
-        inputmode="numeric"
-        maxlength="16"
-        [placeholder]="accountNumberPlaceholder"
-      ></ion-input>
-    </ion-item>
-  </ion-list>
-
-  <!-- Payment Method Selection Section -->
-  <div class="payment-methods-section">
-    <ion-label class="section-label">Select Payment Method</ion-label>
-    <ion-segment [(ngModel)]="selectedPaymentMethod" (ionChange)="onPaymentMethodChange()" value="card">
-      <ion-segment-button value="ewallet">
-        <ion-label>E-Wallet</ion-label>
-      </ion-segment-button>
-
-      <ion-segment-button value="card">
-        <ion-label>Card</ion-label>
-      </ion-segment-button>
-
-      <ion-segment-button value="bank">
-        <ion-label>Bank</ion-label>
-      </ion-segment-button>
-    </ion-segment>
-  </div>
-
-  <!-- Action / Submit Button -->
-  <div class="button-container">
-    <ion-button expand="block" shape="round" color="dark" [disabled]="!canContinue" (click)="processPayment()">
-      Continue
-    </ion-button>
+    <!-- Action / Submit Button -->
+    <div class="button-container">
+      <ion-button expand="block" [disabled]="!canContinue" (click)="processPayment()">
+        Continue
+      </ion-button>
+    </div>
   </div>
 </ion-content>

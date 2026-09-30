@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonContent } from '@ionic/angular';
+import { IonContent, IonIcon } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { arrowBackOutline } from 'ionicons/icons';
 
 interface CalendarCell {
   date: Date;
@@ -16,10 +18,11 @@ interface CalendarCell {
   templateUrl: './booking.page.html',
   styleUrls: ['./booking.page.scss'],
   standalone: true,
-  imports: [IonContent, CommonModule, FormsModule],
+  imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class BookingPage implements OnInit {
-  readonly nightlyRate = 180;
+  // Nightly rate in Philippine peso (₱)
+  readonly nightlyRate = 10000;
 
   destinationName = 'Your stay';
   private destination: any = null;
@@ -32,6 +35,8 @@ export class BookingPage implements OnInit {
   calendarCells: CalendarCell[] = [];
 
   constructor(private router: Router) {
+    addIcons({ 'arrow-back-outline': arrowBackOutline });
+
     const navigation = this.router.getCurrentNavigation();
     const incoming = navigation?.extras?.state?.['destination'];
     if (incoming?.name) {
@@ -161,7 +166,7 @@ export class BookingPage implements OnInit {
     this.router.navigate(['/payment'], {
       state: {
         accommodationName: this.destinationName,
-        bookingTotal: `$${this.totalCost}`,
+        bookingTotal: `₱${this.totalCost.toLocaleString('en-PH')}`,
       },
     });
   }

@@ -1,14 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   IonContent,
-  IonHeader,
-  IonTitle,
-  IonToolbar,
-  IonButtons,
-  IonBackButton,
+  IonIcon,
   IonAvatar,
   IonList,
   IonItem,
@@ -18,6 +14,8 @@ import {
   IonSegmentButton,
   IonButton
 } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { arrowBackOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-payment',
@@ -28,11 +26,7 @@ import {
     CommonModule,
     FormsModule,
     IonContent,
-    IonHeader,
-    IonTitle,
-    IonToolbar,
-    IonButtons,
-    IonBackButton,
+    IonIcon,
     IonAvatar,
     IonList,
     IonItem,
@@ -46,7 +40,7 @@ import {
 export class PaymentPage implements OnInit {
   // Booking Data (falls back to placeholders if opened without a booking)
   accommodationName: string = 'Your stay';
-  bookingTotal: string = '$0';
+  bookingTotal: string = '₱0';
 
   // Payment Form Fields
   discountCode: string = '';
@@ -54,7 +48,9 @@ export class PaymentPage implements OnInit {
   accountNumber: string = '';
   selectedPaymentMethod: string = 'card';
 
-  constructor(private router: Router) {
+  constructor(private router: Router, private location: Location) {
+    addIcons({ 'arrow-back-outline': arrowBackOutline });
+
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as
       | { accommodationName?: string; bookingTotal?: string }
@@ -69,6 +65,14 @@ export class PaymentPage implements OnInit {
   }
 
   ngOnInit() {}
+
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/booking']);
+    }
+  }
 
   get accountNumberLabel(): string {
     if (this.selectedPaymentMethod === 'ewallet') return 'E-Wallet Mobile Number';

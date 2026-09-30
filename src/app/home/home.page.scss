@@ -15,6 +15,13 @@
   color: var(--ink);
 }
 
+// Keeps the layout phone-sized on wide screens instead of stretching edge to edge
+.home-shell {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 // ---- Top bar: profile + quick access ----
 .top-bar {
   display: flex;
@@ -369,6 +376,21 @@
           margin-left: 3px;
         }
       }
+    }
+  }
+}
+
+// ---- Tablet / desktop ----
+@media (min-width: 640px) {
+  .featured-card {
+    height: 280px;
+  }
+
+  .destination-grid {
+    grid-template-columns: repeat(3, 1fr);
+
+    .destination-card .destination-image {
+      height: 140px;
     }
   }
 }
