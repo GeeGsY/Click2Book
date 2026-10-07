@@ -70,9 +70,9 @@
           class="favorite-btn"
           type="button"
           (click)="onToggleFavorite(dest, $event)"
-          [attr.aria-label]="dest.favorite ? 'Remove from favorites' : 'Add to favorites'"
+          [attr.aria-label]="isFavorite(dest) ? 'Remove from favorites' : 'Add to favorites'"
         >
-          <ion-icon [name]="dest.favorite ? 'heart' : 'heart-outline'"></ion-icon>
+          <ion-icon [name]="isFavorite(dest) ? 'heart' : 'heart-outline'"></ion-icon>
         </button>
         <div class="destination-info">
           <h3>{{ dest.name }}</h3>

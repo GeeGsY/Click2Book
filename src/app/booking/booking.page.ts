@@ -184,6 +184,9 @@ export class BookingPage implements OnInit, ViewWillEnter {
       state: {
         accommodationName: this.destinationName,
         bookingTotal: this.totalCost,
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
       },
     });
   }

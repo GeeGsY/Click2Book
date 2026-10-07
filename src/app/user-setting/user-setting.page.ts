@@ -1,9 +1,11 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { IonContent, IonIcon } from '@ionic/angular';
+import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
+import { AppStateService } from '../services/app-state.service';
 import { addIcons } from 'ionicons';
 import {
+  arrowBackOutline,
   createOutline,
   calendarOutline,
   checkmarkDoneOutline,
@@ -40,22 +42,15 @@ interface SettingRow {
   standalone: true,
   imports: [CommonModule, IonContent, IonIcon],
 })
-export class UserSettingPage {
-  // Sample account data for the skeleton prototype.
-  user = {
-    name: 'Leo',
-    email: 'leo@example.com',
-  };
+export class UserSettingPage implements ViewWillEnter {
+  // Live data from the logged-in account (see AppStateService), refreshed every time
+  // the page is shown so new bookings and saved destinations appear straight away.
+  user = { name: '', email: '' };
 
-  // Lifetime booking spend in Philippine peso (shown with the PHP currency pipe).
-  totalSpent = 41800;
+  // Total spent on bookings, in Philippine peso (₱), shown with the PHP currency pipe.
+  totalSpent = 0;
 
-  // Quick summaries / shortcuts: upcoming bookings, completed trips, saved destinations.
-  tiles: SummaryTile[] = [
-    { id: 'upcoming', label: 'Upcoming bookings', value: 2, icon: 'calendar-outline' },
-    { id: 'completed', label: 'Completed trips', value: 5, icon: 'checkmark-done-outline' },
-    { id: 'saved', label: 'Saved destinations', value: 8, icon: 'heart-outline' },
-  ];
+  tiles: SummaryTile[] = [];
 
   // Settings panel, grouped as in the wireframe (3 + 3 + privacy/logout).
   groups: SettingRow[][] = [
@@ -77,8 +72,14 @@ export class UserSettingPage {
     icon: 'shield-checkmark-outline',
   };
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private location: Location,
+    private appState: AppStateService,
+  ) {
+    this.refresh();
     addIcons({
+      'arrow-back-outline': arrowBackOutline,
       'create-outline': createOutline,
       'calendar-outline': calendarOutline,
       'checkmark-done-outline': checkmarkDoneOutline,
@@ -93,6 +94,33 @@ export class UserSettingPage {
       'log-out-outline': logOutOutline,
       'chevron-forward': chevronForward,
     });
+  }
+
+  ionViewWillEnter(): void {
+    this.refresh();
+  }
+
+  private refresh(): void {
+    const account = this.appState.user;
+    this.user = account ?? { name: 'Guest', email: 'Not logged in' };
+    this.totalSpent = this.appState.totalSpent;
+    this.tiles = [
+      { id: 'upcoming', label: 'Upcoming bookings', value: this.appState.upcomingCount, icon: 'calendar-outline' },
+      { id: 'completed', label: 'Completed trips', value: this.appState.completedCount, icon: 'checkmark-done-outline' },
+      { id: 'saved', label: 'Saved destinations', value: this.appState.favoritesCount, icon: 'heart-outline' },
+    ];
+  }
+
+  trackById(_: number, item: { id: string }): string {
+    return item.id;
+  }
+
+  goBack() {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/home']);
+    }
   }
 
   onEditProfile() {
@@ -115,6 +143,7 @@ export class UserSettingPage {
   }
 
   onLogout() {
-    this.router.navigate(['/login']);
+    this.appState.logout();
+    this.router.navigate(['/login'], { replaceUrl: true });
   }
 }

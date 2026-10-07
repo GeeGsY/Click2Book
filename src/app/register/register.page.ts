@@ -8,13 +8,14 @@ import { location, eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import { AppStateService } from '../services/app-state.service';
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.page.html',
-  styleUrls: ['./login.page.scss'],
+  selector: 'app-register',
+  templateUrl: './register.page.html',
+  styleUrls: ['./register.page.scss'],
   standalone: true,
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
-export class LoginPage {
+export class RegisterPage {
+  name = '';
   email = '';
   password = '';
   showPassword = false;
@@ -29,28 +30,24 @@ export class LoginPage {
     });
   }
 
-  async onLogin() {
+  async onSignUp() {
     if (this.busy) return;
     this.message = '';
     this.busy = true;
 
-    const result = await this.state.login(this.email, this.password);
+    const result = await this.state.register(this.name, this.email, this.password);
     this.busy = false;
 
     if (result.ok) {
       this.password = '';
+      // A new account is signed in straight away and goes to the home screen.
       this.router.navigate(['/home'], { replaceUrl: true });
     } else {
-      this.message = result.error ?? 'Could not log in. Please try again.';
+      this.message = result.error ?? 'Could not create the account. Please try again.';
     }
   }
 
-  onForgotPassword() {
-    // TODO: password recovery needs a server to send the reset link
-    this.message = 'Password recovery is not available in this prototype yet.';
-  }
-
-  onSignUp() {
-    this.router.navigate(['/register']);
+  onLogin() {
+    this.router.navigate(['/login']);
   }
 }

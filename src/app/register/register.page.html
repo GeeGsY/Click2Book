@@ -6,8 +6,18 @@
       <ion-icon name="location"></ion-icon>
     </div>
 
-    <!-- 2. Login form -->
-    <form class="auth-card" (ngSubmit)="onLogin()" novalidate>
+    <!-- 2. Sign-up form -->
+    <form class="auth-card" (ngSubmit)="onSignUp()" novalidate>
+      <label for="name">Name</label>
+      <input
+        id="name"
+        name="name"
+        type="text"
+        autocomplete="name"
+        placeholder="Your full name"
+        [(ngModel)]="name"
+      />
+
       <label for="email">Email</label>
       <input
         id="email"
@@ -24,8 +34,8 @@
         <input
           id="password"
           name="password"
-          autocomplete="current-password"
-          placeholder="Your password"
+          autocomplete="new-password"
+          placeholder="At least 6 characters"
           [type]="showPassword ? 'text' : 'password'"
           [(ngModel)]="password"
         />
@@ -42,14 +52,12 @@
       <p class="notice" *ngIf="message" role="alert">{{ message }}</p>
 
       <button class="primary-btn" type="submit" [disabled]="busy">
-        {{ busy ? 'Logging in...' : 'Log in' }}
+        {{ busy ? 'Creating account...' : 'Sign up' }}
       </button>
 
-      <button class="link-btn" type="button" (click)="onForgotPassword()">Forgot password?</button>
-
       <p class="switch">
-        Don't have an account?
-        <button class="link-btn strong" type="button" (click)="onSignUp()">Sign up</button>
+        Already have an account?
+        <button class="link-btn strong" type="button" (click)="onLogin()">Log in</button>
       </p>
     </form>
 

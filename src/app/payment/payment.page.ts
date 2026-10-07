@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AppStateService } from '../services/app-state.service';
 import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline } from 'ionicons/icons';
@@ -36,12 +37,26 @@ export class PaymentPage implements OnInit {
     { id: 'bank', label: 'Bank' },
   ];
 
-  constructor(private router: Router, private location: Location) {
+  private checkIn = '';
+  private checkOut = '';
+  private nights = 0;
+
+  constructor(
+    private router: Router,
+    private location: Location,
+    private appState: AppStateService,
+  ) {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
 
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as
-      | { accommodationName?: string; bookingTotal?: number }
+      | {
+          accommodationName?: string;
+          bookingTotal?: number;
+          checkIn?: string;
+          checkOut?: string;
+          nights?: number;
+        }
       | undefined;
 
     if (state?.accommodationName) {
@@ -50,6 +65,9 @@ export class PaymentPage implements OnInit {
     if (typeof state?.bookingTotal === 'number') {
       this.bookingTotal = state.bookingTotal;
     }
+    this.checkIn = state?.checkIn ?? '';
+    this.checkOut = state?.checkOut ?? '';
+    this.nights = state?.nights ?? 0;
   }
 
   ngOnInit() {}
@@ -117,13 +135,16 @@ export class PaymentPage implements OnInit {
   processPayment() {
     if (!this.canContinue) return;
 
-    // Validate inputs or submit payment logic here
-    console.log('Processing payment via:', this.selectedPaymentMethod);
-    console.log('Details:', {
-      accommodation: this.accommodationName,
+    // TODO: send the payment to a real payment provider. For now the booking is
+    // saved in the app so User Settings can show it.
+    const method = this.paymentMethods.find((m) => m.id === this.selectedPaymentMethod);
+    this.appState.addBooking({
+      destinationName: this.accommodationName,
+      checkIn: this.checkIn,
+      checkOut: this.checkOut,
+      nights: this.nights,
       total: this.bookingTotal,
-      discount: this.discountCode,
-      method: this.selectedPaymentMethod
+      method: method?.label ?? this.selectedPaymentMethod,
     });
 
     // Navigate to confirmation screen

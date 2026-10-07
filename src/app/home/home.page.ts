@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AppStateService } from '../services/app-state.service';
 import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 
@@ -42,7 +43,6 @@ interface Destination {
   // under "Popular this week"
   popular: boolean;
 
-  favorite: boolean;
 
   description: string;
 }
@@ -142,7 +142,7 @@ export class HomePage {
       reviewCount: 186,
 
       image:
-        'src/assets/img/palui1.jpg',
+        'assets/img/palui1.jpg',
 
       categories: [
         'beach',
@@ -150,8 +150,6 @@ export class HomePage {
       ],
 
       popular: true,
-
-      favorite: false,
 
       description:
         'A beautiful island destination in Santa Ana, Cagayan known for its beaches, coastal scenery, and Cape Engaño Lighthouse. Enjoy a relaxing island getaway with sightseeing and nature activities.' +
@@ -184,8 +182,6 @@ export class HomePage {
       ],
 
       popular: true,
-
-      favorite: true,
 
       description:
         'A peaceful beach destination in Santa Ana, Cagayan featuring fine white sand and clear coastal waters. It is ideal for travelers looking for a relaxing beach trip and outdoor activities.' +
@@ -220,8 +216,6 @@ export class HomePage {
 
       popular: true,
 
-      favorite: false,
-
       description:
         'A famous limestone cave destination in Peñablanca, Cagayan known for its large chambers, natural rock formations, and scenic surroundings.' +
         STAY_POLICY
@@ -253,8 +247,6 @@ export class HomePage {
       ],
 
       popular: true,
-
-      favorite: false,
 
       description:
         'An adventure destination in Quirino featuring scenic river views, limestone formations, and beautiful natural surroundings. A great choice for travelers looking for outdoor experiences.' +
@@ -289,8 +281,6 @@ export class HomePage {
 
       popular: false,
 
-      favorite: false,
-
       description:
         'A nature and adventure destination in Quirino featuring caves surrounded by forests and scenic landscapes. It is suitable for travelers interested in outdoor exploration.' +
         STAY_POLICY
@@ -322,8 +312,6 @@ export class HomePage {
       ],
 
       popular: false,
-
-      favorite: false,
 
       description:
         "A nature destination in Quirino surrounded by forests, rock formations, and scenic landscapes. Siitan Nature's Park is a good choice for travelers looking for a quiet outdoor escape." +
@@ -358,8 +346,6 @@ export class HomePage {
 
       popular: true,
 
-      favorite: false,
-
       description:
         'A refreshing waterfall destination in Nueva Vizcaya surrounded by lush greenery and forest scenery. It offers travelers a peaceful place to enjoy nature and outdoor activities.' +
         STAY_POLICY
@@ -392,8 +378,6 @@ export class HomePage {
       ],
 
       popular: false,
-
-      favorite: false,
 
       description:
         'A cave adventure destination in Nueva Vizcaya featuring underground rock formations and natural surroundings. It is suited for travelers interested in exploring the natural landscapes of Cagayan Valley.' +
@@ -428,8 +412,6 @@ export class HomePage {
 
       popular: false,
 
-      favorite: false,
-
       description:
         'A scenic waterfall destination in Isabela surrounded by greenery and natural landscapes. Dibulo Falls is a great choice for travelers who want a refreshing outdoor experience in Cagayan Valley.' +
         STAY_POLICY
@@ -462,8 +444,6 @@ export class HomePage {
 
       popular: false,
 
-      favorite: false,
-
       description:
         'A nature destination in Ilagan, Isabela surrounded by forests and mountain scenery. It provides visitors with a peaceful environment for sightseeing and enjoying the natural beauty of Cagayan Valley.' +
         STAY_POLICY
@@ -476,7 +456,7 @@ export class HomePage {
   // CONSTRUCTOR
   // ============================================================
 
-  constructor(private router: Router) {
+  constructor(private router: Router, private state: AppStateService) {
 
     addIcons({
 
@@ -684,6 +664,10 @@ export class HomePage {
   // FAVORITE BUTTON
   // ============================================================
 
+  isFavorite(dest: Destination): boolean {
+    return this.state.isFavorite(dest.id);
+  }
+
   onToggleFavorite(
     dest: Destination,
     event: Event
@@ -694,9 +678,7 @@ export class HomePage {
     event.stopPropagation();
 
 
-    // Toggle favorite status
-    dest.favorite =
-      !dest.favorite;
+    this.state.toggleFavorite(dest.id);
 
   }
 
