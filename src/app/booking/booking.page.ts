@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { IonContent, IonIcon } from '@ionic/angular';
+import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline } from 'ionicons/icons';
 
@@ -13,6 +13,9 @@ interface CalendarCell {
   inCurrentMonth: boolean;
 }
 
+// Used when the page is opened without a destination (price per night, in ₱).
+const DEFAULT_NIGHTLY_RATE = 10000;
+
 @Component({
   selector: 'app-booking',
   templateUrl: './booking.page.html',
@@ -20,9 +23,9 @@ interface CalendarCell {
   standalone: true,
   imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
-export class BookingPage implements OnInit {
-  // Nightly rate in Philippine peso (₱)
-  readonly nightlyRate = 10000;
+export class BookingPage implements OnInit, ViewWillEnter {
+  // Nightly rate in Philippine peso (₱), taken from the chosen destination
+  nightlyRate = DEFAULT_NIGHTLY_RATE;
 
   destinationName = 'Your stay';
   private destination: any = null;
@@ -36,13 +39,8 @@ export class BookingPage implements OnInit {
 
   constructor(private router: Router) {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
-
-    const navigation = this.router.getCurrentNavigation();
-    const incoming = navigation?.extras?.state?.['destination'];
-    if (incoming?.name) {
-      this.destination = incoming;
-      this.destinationName = incoming.country ? `${incoming.name}, ${incoming.country}` : incoming.name;
-    }
+    // The router's navigation state is only available while the page is being created.
+    this.loadDestinationFromState();
   }
 
   ngOnInit(): void {
@@ -50,6 +48,25 @@ export class BookingPage implements OnInit {
     this.viewYear = start.getFullYear();
     this.viewMonth = start.getMonth();
     this.rebuildCalendar();
+  }
+
+  // Ionic reuses this page between visits, so re-read the chosen destination
+  // every time it becomes active again.
+  ionViewWillEnter(): void {
+    this.loadDestinationFromState();
+  }
+
+  private loadDestinationFromState(): void {
+    const navState = (this.router.getCurrentNavigation()?.extras?.state ?? history.state ?? {}) as {
+      destination?: any;
+    };
+    const incoming = navState.destination;
+
+    if (incoming?.name) {
+      this.destination = incoming;
+      this.destinationName = incoming.country ? `${incoming.name}, ${incoming.country}` : incoming.name;
+      this.nightlyRate = typeof incoming.price === 'number' ? incoming.price : DEFAULT_NIGHTLY_RATE;
+    }
   }
 
   get monthLabel(): string {
@@ -166,7 +183,7 @@ export class BookingPage implements OnInit {
     this.router.navigate(['/payment'], {
       state: {
         accommodationName: this.destinationName,
-        bookingTotal: `₱${this.totalCost.toLocaleString('en-PH')}`,
+        bookingTotal: this.totalCost,
       },
     });
   }

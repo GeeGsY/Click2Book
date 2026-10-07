@@ -1,22 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  IonContent,
-  IonIcon,
-} from '@ionic/angular';
+import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
   personCircleOutline,
   notificationsOutline,
   searchOutline,
-  optionsOutline,
-  airplaneOutline,
-  bedOutline,
-  carSportOutline,
-  boatOutline,
-  sunnyOutline,
   heart,
   heartOutline,
   star,
@@ -26,27 +17,31 @@ import {
 interface Category {
   id: string;
   label: string;
-  icon: string;
 }
 
 interface Destination {
   id: number;
   name: string;
   country: string;
-  price: string;
+  // Price per night in Philippine peso (₱), formatted with the PHP currency pipe.
+  price: number;
   rating: number;
+  reviewCount: number;
   image: string;
+  categories: string[];
+  popular: boolean;
   favorite: boolean;
+  description: string;
 }
 
-interface Featured {
-  id: number;
-  name: string;
-  country: string;
-  badge: string;
-  price: string;
-  image: string;
-}
+const STAY_POLICY =
+  ' Check-in is from 2:00 PM and check-out is 11:00 AM. Free cancellation up to 48 hours before arrival.';
+
+// Extra gallery photos for the three preview thumbnails on the details page.
+const GALLERY_PHOTOS = [
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80',
+  'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=400&q=80',
+];
 
 @Component({
   selector: 'app-home',
@@ -55,55 +50,90 @@ interface Featured {
   standalone: true,
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
-export class HomePage implements OnInit {
-  userName = 'Leo';
+export class HomePage {
   searchTerm = '';
-  activeCategory = 'flights';
+  activeCategory = '';
 
-  featured: Featured = {
-    id: 1,
-    name: 'Siargao',
-    country: 'Surigao del Norte, PH',
-    badge: 'Seasonal pick',
-    price: '₱8,900',
-    image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&q=80',
-  };
+  featuredBadge = 'Seasonal pick';
 
   categories: Category[] = [
-    { id: 'flights', label: 'Flights', icon: 'airplane-outline' },
-    { id: 'stays', label: 'Stays', icon: 'bed-outline' },
-    { id: 'cars', label: 'Cars', icon: 'car-sport-outline' },
-    { id: 'cruises', label: 'Cruises', icon: 'boat-outline' },
-    { id: 'beach', label: 'Beach', icon: 'sunny-outline' },
+    { id: 'hotels', label: 'Hotels' },
+    { id: 'resorts', label: 'Resorts' },
+    { id: 'beach', label: 'Beach' },
   ];
 
-  popularDestinations: Destination[] = [
+  destinations: Destination[] = [
     {
       id: 1,
-      name: 'El Nido',
-      country: 'Palawan, PH',
-      price: '₱6,499',
+      name: 'Siargao',
+      country: 'Surigao del Norte, PH',
+      price: 8900,
       rating: 4.9,
-      image: 'https://images.unsplash.com/photo-1573790387438-4da905039392?w=400&q=80',
-      favorite: true,
+      reviewCount: 1280,
+      image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&q=80',
+      categories: ['beach', 'resorts'],
+      popular: false,
+      favorite: false,
+      description:
+        'Experience pristine tropical waters, world-class surfing waves, and island scenery.' + STAY_POLICY,
     },
     {
       id: 2,
-      name: 'Kyoto',
-      country: 'Japan',
-      price: '₱24,900',
-      rating: 4.8,
-      image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80',
-      favorite: false,
+      name: 'El Nido',
+      country: 'Palawan, PH',
+      price: 6499,
+      rating: 4.9,
+      reviewCount: 2310,
+      image: 'https://images.unsplash.com/photo-1573790387438-4da905039392?w=600&q=80',
+      categories: ['resorts', 'beach'],
+      popular: true,
+      favorite: true,
+      description:
+        'Limestone cliffs, hidden lagoons, and island-hopping tours right from the shore.' + STAY_POLICY,
     },
     {
       id: 3,
       name: 'Boracay',
       country: 'Aklan, PH',
-      price: '₱5,200',
+      price: 5200,
       rating: 4.7,
-      image: 'https://images.unsplash.com/photo-1518509562904-e7ef99cddff8?w=400&q=80',
+      reviewCount: 3894,
+      image: 'https://images.unsplash.com/photo-1518509562904-e7ef99cddff8?w=600&q=80',
+      categories: ['hotels', 'beach'],
+      popular: true,
       favorite: false,
+      description:
+        'White Beach sunsets, water sports, and lively nightlife within walking distance.' + STAY_POLICY,
+    },
+    {
+      id: 4,
+      name: 'Bali',
+      country: 'Indonesia',
+      price: 18500,
+      rating: 4.6,
+      reviewCount: 4218,
+      image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80',
+      categories: ['resorts', 'beach'],
+      popular: false,
+      favorite: false,
+      description:
+        "A cliffside retreat overlooking the Indian Ocean, a short walk from Uluwatu's surf breaks. The stay includes a private pool villa, daily breakfast, and airport transfer." +
+        STAY_POLICY,
+    },
+    {
+      id: 5,
+      name: 'Kyoto',
+      country: 'Japan',
+      price: 24900,
+      rating: 4.8,
+      reviewCount: 1764,
+      image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80',
+      categories: ['hotels'],
+      popular: false,
+      favorite: false,
+      description:
+        'Quiet temple districts, traditional streets, and a calm base for exploring the old capital.' +
+        STAY_POLICY,
     },
   ];
 
@@ -112,12 +142,6 @@ export class HomePage implements OnInit {
       'person-circle-outline': personCircleOutline,
       'notifications-outline': notificationsOutline,
       'search-outline': searchOutline,
-      'options-outline': optionsOutline,
-      'airplane-outline': airplaneOutline,
-      'bed-outline': bedOutline,
-      'car-sport-outline': carSportOutline,
-      'boat-outline': boatOutline,
-      'sunny-outline': sunnyOutline,
       heart: heart,
       'heart-outline': heartOutline,
       star: star,
@@ -125,67 +149,53 @@ export class HomePage implements OnInit {
     });
   }
 
-  ngOnInit() {}
-
-  onProfile() {
-    // TODO: navigate to profile page
+  get featured(): Destination {
+    return this.destinations[0];
   }
 
-  onQuickAccess() {
-    // TODO: open notifications/account shortcuts
+  get isFiltering(): boolean {
+    return !!this.searchTerm.trim() || !!this.activeCategory;
   }
 
-  onFeaturedTap() {
-    this.router.navigate(['/destination-details'], {
-      state: {
-        destination: {
-          ...this.featured,
-          rating: 4.9,
-          reviewCount: 1280,
-          heroImage: this.featured.image,
-          thumbnails: [
-            this.featured.image,
-            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80',
-            'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=400&q=80'
-          ],
-          description: 'Experience pristine tropical waters, world-class surfing waves, and island scenery.'
-        }
-      }
+  get sectionLabel(): string {
+    return this.isFiltering ? 'Results' : 'Popular this week';
+  }
+
+  // With no search or category, show the popular picks; otherwise search everything.
+  get visibleDestinations(): Destination[] {
+    if (!this.isFiltering) {
+      return this.destinations.filter((d) => d.popular);
+    }
+    const query = this.searchTerm.trim().toLowerCase();
+    return this.destinations.filter((d) => {
+      const matchesCategory = !this.activeCategory || d.categories.includes(this.activeCategory);
+      const matchesText = !query || `${d.name} ${d.country}`.toLowerCase().includes(query);
+      return matchesCategory && matchesText;
     });
   }
 
-  onSearch() {
-    // TODO: filter/search as user types
+  onProfile() {
+    this.router.navigate(['/user-setting']);
   }
 
-  onFilter() {
-    // TODO: open filter modal
+  onQuickAccess() {
+    // TODO: open notifications / account shortcuts
   }
 
+  // Tapping the active category again clears the filter.
   onCategorySelect(cat: Category) {
-    this.activeCategory = cat.id;
-    // TODO: filter results by category
+    this.activeCategory = this.activeCategory === cat.id ? '' : cat.id;
   }
 
-  onSeeAllPopular() {
-    // TODO: navigate to full popular destinations list
-  }
-
-  onDestinationTap(dest: Destination) {
+  openDetails(dest: Destination) {
     this.router.navigate(['/destination-details'], {
       state: {
         destination: {
           ...dest,
-          reviewCount: 850,
           heroImage: dest.image,
-          thumbnails: [
-            dest.image,
-            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80',
-            'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=400&q=80'
-          ],
-          description: `Discover the breathtaking beauty of ${dest.name}, offering scenic views, rich culture, and unforgettable travel experiences.`
-        }
-      }
+          thumbnails: [dest.image, ...GALLERY_PHOTOS],
+        },
+      },
     });
   }
 

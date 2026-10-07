@@ -1,13 +1,52 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>user_setting</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="settings-content" [fullscreen]="true">
+  <div class="settings-shell">
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">user_setting</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <!-- 1. Profile: picture, name, basic account info, edit button -->
+    <section class="profile">
+      <div class="avatar" aria-hidden="true">{{ user.name.charAt(0) }}</div>
+      <h1 class="profile-name">{{ user.name }}</h1>
+      <p class="profile-email">{{ user.email }}</p>
+      <button class="edit-btn" type="button" (click)="onEditProfile()">
+        <ion-icon name="create-outline"></ion-icon>
+        Edit profile
+      </button>
+    </section>
+
+    <!-- 2. Three quick-summary tiles -->
+    <section class="tiles">
+      <button class="tile" type="button" *ngFor="let tile of tiles" (click)="onTileTap(tile)">
+        <ion-icon [name]="tile.icon"></ion-icon>
+        <span class="tile-value">{{ tile.value }}</span>
+        <span class="tile-label">{{ tile.label }}</span>
+      </button>
+    </section>
+
+    <!-- 3. Settings panel: three groups, last row is Log out -->
+    <section class="panel">
+      <div class="group" *ngFor="let group of groups">
+        <button class="row" type="button" *ngFor="let row of group" (click)="onRowTap(row)">
+          <ion-icon class="row-icon" [name]="row.icon"></ion-icon>
+          <span class="row-label">{{ row.label }}</span>
+          <span class="row-meta" *ngIf="row.id === 'history'">
+            {{ totalSpent | currency: 'PHP' : 'symbol' : '1.0-0' }} spent
+          </span>
+          <span class="row-meta" *ngIf="row.meta">{{ row.meta }}</span>
+          <ion-icon class="row-chevron" name="chevron-forward"></ion-icon>
+        </button>
+      </div>
+
+      <div class="group">
+        <button class="row" type="button" (click)="onRowTap(privacyRow)">
+          <ion-icon class="row-icon" [name]="privacyRow.icon"></ion-icon>
+          <span class="row-label">{{ privacyRow.label }}</span>
+          <ion-icon class="row-chevron" name="chevron-forward"></ion-icon>
+        </button>
+        <button class="logout-btn" type="button" (click)="onLogout()">
+          <ion-icon name="log-out-outline"></ion-icon>
+          Log out
+        </button>
+      </div>
+    </section>
+
+  </div>
 </ion-content>

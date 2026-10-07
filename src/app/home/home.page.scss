@@ -7,10 +7,15 @@
   --coral: #ff6f59;
   --ink: #1f2a24;
   --card-white: #ffffff;
+  display: block;
 }
 
 .home-content {
   --background: var(--sand);
+  --padding-start: 22px;
+  --padding-end: 22px;
+  --padding-top: 14px;
+  --padding-bottom: 28px;
   font-family: 'Manrope', sans-serif;
   color: var(--ink);
 }
@@ -18,21 +23,20 @@
 // Keeps the layout phone-sized on wide screens instead of stretching edge to edge
 .home-shell {
   width: 100%;
-  max-width: 720px;
+  max-width: 560px;
   margin: 0 auto;
 }
 
-// ---- Top bar: profile + quick access ----
+// ---- Top bar: profile (left) + quick access (right) ----
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 
   .icon-btn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--card-white);
     border: none;
@@ -40,82 +44,65 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(14, 59, 67, 0.08);
-    font-size: 22px;
+    font-size: 24px;
     color: var(--ocean);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
 
-    &:last-child {
+    &.dark {
       background: var(--ocean);
       color: #ffffff;
     }
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 }
 
-// ---- Search row ----
-.search-row {
+// ---- Search (full-width pill) ----
+.search-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
+  background: var(--card-white);
+  border-radius: 30px;
+  padding: 0 18px;
+  min-height: 46px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
 
-  .search-bar {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--card-white);
-    border-radius: 14px;
-    padding: 12px 14px;
-    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
-
-    ion-icon {
-      font-size: 18px;
-      color: var(--ink);
-      opacity: 0.5;
-    }
-
-    input {
-      border: none;
-      outline: none;
-      background: transparent;
-      font-family: 'Manrope', sans-serif;
-      font-size: 14px;
-      color: var(--ink);
-      width: 100%;
-
-      &::placeholder {
-        color: rgba(31, 42, 34, 0.45);
-      }
-    }
+  ion-icon {
+    font-size: 18px;
+    color: var(--ink);
+    opacity: 0.5;
   }
 
-  .filter-btn {
-    flex-shrink: 0;
-    width: 46px;
-    height: 46px;
-    border-radius: 14px;
-    background: var(--coral);
+  input {
+    flex: 1;
+    min-width: 0;
     border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 10px rgba(255, 111, 89, 0.35);
+    outline: none;
+    background: transparent;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
 
-    ion-icon {
-      font-size: 20px;
-      color: #ffffff;
+    &::placeholder {
+      color: rgba(31, 42, 34, 0.45);
     }
   }
 }
 
-// ---- Featured destination card ----
+// ---- Featured destination ----
 .featured-card {
   position: relative;
-  height: 220px;
-  border-radius: 22px;
+  height: 234px;
+  border-radius: 20px;
   background-size: cover;
   background-position: center;
   overflow: hidden;
-  margin-bottom: 22px;
+  margin-bottom: 26px;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(14, 59, 67, 0.18);
 
@@ -142,7 +129,7 @@
   .featured-info {
     position: absolute;
     left: 18px;
-    right: 56px;
+    right: 60px;
     bottom: 16px;
     z-index: 1;
     color: #ffffff;
@@ -193,186 +180,149 @@
   }
 }
 
-// ---- Category filters ----
-.filter-label {
-  margin: 0 0 10px;
+// ---- Section labels ----
+.section-label {
+  margin: 0 0 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--teal);
 }
 
+// ---- Category pills ----
 .categories-row {
   display: flex;
-  gap: 20px;
+  gap: 10px;
   overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 26px;
+  padding-bottom: 4px;
+  margin-bottom: 28px;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
 
-  .category-item {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    background: none;
+  .category-pill {
+    flex: 1 0 auto;
+    min-width: 90px;
+    min-height: 34px;
+    padding: 0 18px;
     border: none;
-    padding: 0;
-
-    .category-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      background: var(--card-white);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--ocean);
-      font-size: 22px;
-      transition: background 0.15s ease, color 0.15s ease;
-    }
-
-    .category-label {
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--ink);
-      opacity: 0.75;
-    }
+    border-radius: 20px;
+    background: var(--card-white);
+    color: var(--ocean);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
 
     &.active {
-      .category-icon {
-        background: var(--ocean);
-        color: #ffffff;
-      }
-      .category-label {
-        opacity: 1;
-        color: var(--ocean);
-      }
+      background: var(--ocean);
+      color: #ffffff;
     }
   }
 }
 
-// ---- Section header ----
-.section-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 14px;
-
-  h2 {
-    margin: 0;
-    font-family: 'Fraunces', serif;
-    font-size: 20px;
-    font-weight: 500;
-    color: var(--ocean);
-  }
-
-  .see-all {
-    background: none;
-    border: none;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--teal);
-    padding: 0;
-  }
-}
-
-// ---- Destination grid ----
+// ---- Destination cards (square, image fills the card) ----
 .destination-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 12px;
 
   .destination-card {
-    background: var(--card-white);
-    border-radius: 18px;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: 25px;
     overflow: hidden;
-    box-shadow: 0 4px 14px rgba(14, 59, 67, 0.1);
+    background-color: #d9d9d9;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 4px 14px rgba(14, 59, 67, 0.12);
     cursor: pointer;
 
-    .destination-image {
-      position: relative;
-      height: 120px;
-      background-size: cover;
-      background-position: center;
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(14, 59, 67, 0) 45%, rgba(14, 59, 67, 0.88) 100%);
+    }
 
-      .favorite-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.85);
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .rating-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(14, 59, 67, 0.85);
+      border-radius: 10px;
+      padding: 3px 8px;
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 600;
 
-        ion-icon {
-          font-size: 16px;
-          color: var(--coral);
-        }
+      ion-icon {
+        font-size: 12px;
+        color: #ffd166;
       }
+    }
 
-      .rating-badge {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        background: rgba(14, 59, 67, 0.85);
-        border-radius: 10px;
-        padding: 3px 8px;
-        color: #ffffff;
-        font-size: 11.5px;
-        font-weight: 600;
+    .favorite-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.88);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
 
-        ion-icon {
-          font-size: 12px;
-          color: #ffd166;
-        }
+      ion-icon {
+        font-size: 16px;
+        color: var(--coral);
       }
     }
 
     .destination-info {
-      padding: 12px 14px 14px;
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 12px;
+      z-index: 1;
+      color: #ffffff;
 
-      .destination-name-row {
-        margin-bottom: 6px;
+      h3 {
+        margin: 0;
+        font-family: 'Fraunces', serif;
+        font-size: 17px;
+        font-weight: 500;
+      }
 
-        h3 {
-          margin: 0;
-          font-size: 15px;
-          font-weight: 700;
-          color: var(--ink);
-        }
-
-        .destination-country {
-          margin: 2px 0 0;
-          font-size: 12px;
-          color: rgba(31, 42, 34, 0.55);
-        }
+      .destination-country {
+        margin: 1px 0 4px;
+        font-size: 11.5px;
+        opacity: 0.85;
       }
 
       .destination-price {
         margin: 0;
 
         .price {
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
-          color: var(--coral);
         }
 
         .price-unit {
-          font-size: 11px;
-          color: rgba(31, 42, 34, 0.5);
+          font-size: 10.5px;
+          opacity: 0.8;
           margin-left: 3px;
         }
       }
@@ -380,17 +330,15 @@
   }
 }
 
-// ---- Tablet / desktop ----
+.empty-state {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(31, 42, 34, 0.55);
+}
+
 @media (min-width: 640px) {
   .featured-card {
     height: 280px;
-  }
-
-  .destination-grid {
-    grid-template-columns: repeat(3, 1fr);
-
-    .destination-card .destination-image {
-      height: 140px;
-    }
   }
 }

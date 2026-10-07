@@ -12,6 +12,10 @@
 
 .payment-page {
   --background: var(--sand);
+  --padding-start: 22px;
+  --padding-end: 22px;
+  --padding-top: 14px;
+  --padding-bottom: 28px;
   font-family: 'Manrope', sans-serif;
   color: var(--ink);
 }
@@ -23,17 +27,15 @@
   margin: 0 auto;
 }
 
-// ---- Top bar: back + profile ----
+// ---- Back ----
 .top-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-top: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 40px;
 
   .icon-btn {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--card-white);
     border: none;
@@ -46,130 +48,141 @@
     cursor: pointer;
     transition: opacity 0.15s ease;
 
-    &:hover {
-      opacity: 0.85;
+    &:active {
+      opacity: 0.8;
     }
   }
-
-  ion-avatar {
-    width: 44px;
-    height: 44px;
-    background: var(--card-white);
-    box-shadow: 0 2px 6px rgba(14, 59, 67, 0.08);
-  }
 }
 
-.page-title {
-  margin: 0 0 18px;
-  font-family: 'Fraunces', serif;
-  font-size: 24px;
-  font-weight: 500;
-  color: var(--ocean);
-}
+// ---- Section labels ----
+.section-label {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
 
-// ---- Form fields ----
-.info-section {
-  background: transparent;
-  padding: 0;
-  margin-bottom: 22px;
-
-  .input-item {
-    --background: var(--card-white);
-    --border-radius: 14px;
-    --border-color: transparent;
-    --highlight-color-focused: var(--teal);
+  &.methods-label {
+    margin-top: 28px;
     margin-bottom: 12px;
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
-    font-size: 14px;
-
-    ion-label {
-      font-family: 'Manrope', sans-serif;
-      font-size: 12px !important;
-      font-weight: 600;
-      text-transform: none;
-      color: var(--teal) !important;
-    }
-
-    ion-input {
-      --color: var(--ink);
-      --placeholder-color: rgba(31, 42, 34, 0.45);
-      font-family: 'Manrope', sans-serif;
-      font-weight: 600;
-    }
-  }
-
-  // Total stands out the same way prices do on the homepage
-  .total-item ion-input {
-    --color: var(--coral);
-    font-weight: 700;
-  }
-
-  .field-row {
-    display: flex;
-    gap: 12px;
-
-    .half-width {
-      flex: 1;
-      min-width: 0;
-    }
   }
 }
 
-// ---- Payment method ----
-.payment-methods-section {
-  margin-bottom: 24px;
+// ---- Form fields: long (full width) and small (two per row) ----
+.field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--card-white);
+  border-radius: 12px;
+  padding: 9px 14px 10px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
 
-  .section-label {
-    display: block;
-    font-size: 13px;
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--teal);
+  }
+
+  label {
+    font-size: 11.5px;
     font-weight: 600;
     color: var(--teal);
-    margin-bottom: 10px;
   }
 
-  ion-segment {
-    --background: var(--card-white);
-    border-radius: 14px;
-    padding: 3px;
-    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
+  input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0;
+    min-height: 22px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
 
-    ion-segment-button {
-      --color: var(--ocean);
-      --color-checked: #ffffff;
-      --indicator-color: var(--ocean);
-      --border-radius: 12px;
-      min-height: 40px;
-      font-family: 'Manrope', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: none;
+    &::placeholder {
+      color: rgba(31, 42, 34, 0.4);
+      font-weight: 500;
+    }
+
+    &[readonly] {
+      cursor: default;
+    }
+
+    // Total stands out the same way prices do on the other pages
+    &.total-input {
+      color: var(--coral);
+      font-weight: 700;
     }
   }
 }
 
-// ---- Primary action ----
-.button-container {
-  margin-top: 24px;
+.field-row {
+  display: flex;
+  gap: 14px;
 
-  ion-button {
-    margin: 0;
-    height: 52px;
-    --background: var(--coral);
-    --background-activated: #e85c46;
-    --background-hover: #f5654f;
-    --border-radius: 14px;
-    --box-shadow: 0 4px 10px rgba(255, 111, 89, 0.35);
-    font-family: 'Manrope', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    text-transform: none;
+  // a lone small field keeps the same width as one of a pair
+  .field:only-child {
+    flex: 0 0 calc(50% - 7px);
   }
 }
 
-// ---- Tablet / desktop ----
-@media (min-width: 768px) {
-  .page-title {
-    font-size: 28px;
+// ---- Payment method: three buttons ----
+.method-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  .method-btn {
+    min-height: 40px;
+    border: none;
+    border-radius: 12px;
+    background: var(--card-white);
+    color: var(--ocean);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &.active {
+      background: var(--ocean);
+      color: #ffffff;
+    }
+  }
+}
+
+// ---- Continue (right-aligned, as in the wireframe) ----
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 56px;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  .primary-btn {
+    min-width: 131px;
+    height: 47px;
+    padding: 0 24px;
+    background: var(--ocean);
+    color: #ffffff;
+    border: none;
+    border-radius: 15px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &:not(:disabled):active {
+      opacity: 0.8;
+    }
   }
 }

@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap');
+
+// Same palette as the Home and Payment pages
+:host {
+  --ocean: #0e3b43;
+  --teal: #1c6e71;
+  --sand: #f5efe3;
+  --coral: #ff6f59;
+  --ink: #1f2a24;
+  --card-white: #ffffff;
+  display: block;
+}
+
+.settings-content {
+  --background: var(--sand);
+  --padding-start: 22px;
+  --padding-end: 22px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  font-family: 'Manrope', sans-serif;
+  color: var(--ink);
+}
+
+// Phone-sized column, centered on wide screens
+.settings-shell {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 56px 0 calc(32px + env(safe-area-inset-bottom));
+}
+
+// ---- 1. Profile ----
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 28px;
+
+  .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--card-white);
+    border: 2px solid var(--ocean);
+    box-shadow: 0 4px 14px rgba(14, 59, 67, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 42px;
+    font-weight: 500;
+    color: var(--ocean);
+    margin-bottom: 14px;
+  }
+
+  .profile-name {
+    margin: 0;
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ocean);
+  }
+
+  .profile-email {
+    margin: 2px 0 14px;
+    font-size: 13px;
+    color: rgba(31, 42, 34, 0.6);
+  }
+
+  .edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ocean);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 22px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    ion-icon {
+      font-size: 15px;
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+}
+
+// ---- 2. Summary tiles ----
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 26px;
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 92px;
+    padding: 12px 6px;
+    background: var(--card-white);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(14, 59, 67, 0.1);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+
+    &:active {
+      transform: scale(0.97);
+    }
+
+    ion-icon {
+      font-size: 20px;
+      color: var(--coral);
+    }
+
+    .tile-value {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--ocean);
+      line-height: 1.1;
+    }
+
+    .tile-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: rgba(31, 42, 34, 0.6);
+    }
+  }
+}
+
+// ---- 3. Settings panel ----
+.panel {
+  background: var(--card-white);
+  border-radius: 20px;
+  padding: 20px 18px;
+  box-shadow: 0 4px 14px rgba(14, 59, 67, 0.1);
+
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    & + .group {
+      margin-top: 22px;
+    }
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    background: var(--sand);
+    border: none;
+    border-radius: 12px;
+    font-family: 'Manrope', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:active {
+      background: #ebe3d2;
+    }
+
+    .row-icon {
+      flex-shrink: 0;
+      font-size: 19px;
+      color: var(--teal);
+    }
+
+    .row-label {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .row-meta {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--coral);
+    }
+
+    .row-chevron {
+      flex-shrink: 0;
+      font-size: 15px;
+      color: rgba(31, 42, 34, 0.35);
+    }
+  }
+
+  // Dark bottom button, matches the black bar in the wireframe
+  .logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 46px;
+    background: var(--ocean);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    ion-icon {
+      font-size: 18px;
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+}

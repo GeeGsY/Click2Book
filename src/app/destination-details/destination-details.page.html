@@ -1,22 +1,24 @@
 <ion-content class="details-content" [fullscreen]="true">
   <div class="details-page">
-    <!-- 1. Back + contact -->
+
+    <!-- 1. Back + message the host -->
     <div class="top-bar">
-      <button class="icon-btn" (click)="onBack()" aria-label="Back">
+      <button class="icon-btn" type="button" (click)="onBack()" aria-label="Back">
         <ion-icon name="arrow-back-outline"></ion-icon>
       </button>
-      <button class="icon-btn" (click)="onMessage()" aria-label="Message host">
+      <button class="icon-btn dark" type="button" (click)="onMessage()" aria-label="Message the host">
         <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
       </button>
     </div>
 
-    <!-- 2. Hero image -->
+    <!-- 2. Main image -->
     <div class="hero-image" [style.background-image]="'url(' + destination.heroImage + ')'"></div>
 
-    <!-- 3. Thumbnail previews -->
+    <!-- 3. Three preview images -->
     <div class="thumbnail-row">
       <button
         class="thumbnail"
+        type="button"
         *ngFor="let img of destination.thumbnails; let i = index"
         [class.active]="i === activeImage"
         (click)="onSelectThumbnail(i)"
@@ -25,7 +27,7 @@
       ></button>
     </div>
 
-    <!-- 4. Title + rating -->
+    <!-- 4. Name + rating -->
     <div class="title-block">
       <h1>{{ destination.name }}, {{ destination.country }}</h1>
       <div class="rating-row">
@@ -35,24 +37,19 @@
       </div>
     </div>
 
-    <!-- 5. Info area: amenities + description -->
+    <!-- 5. Description -->
     <div class="info-card">
-      <div class="amenities-row">
-        <div class="amenity" *ngFor="let a of amenities">
-          <ion-icon [name]="a.icon"></ion-icon>
-          <span>{{ a.label }}</span>
-        </div>
-      </div>
       <p class="description">{{ destination.description }}</p>
     </div>
 
-    <!-- 6. Booking action -->
-    <div class="action-bar">
+    <!-- 6. Price + book -->
+    <div class="action-row">
       <div class="action-price">
-        <span class="price">{{ destination.price }}</span>
-        <span class="price-unit">/ person</span>
+        <span class="price">{{ destination.price | currency: 'PHP' : 'symbol' : '1.0-0' }}</span>
+        <span class="price-unit">/ night</span>
       </div>
-      <button class="book-btn" (click)="onBookNow()">Book now</button>
+      <button class="book-btn" type="button" (click)="onBookNow()">Book now</button>
     </div>
+
   </div>
-</ion-content>  
+</ion-content>

@@ -1,39 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import {
-  arrowBackOutline,
-  chatbubbleEllipsesOutline,
-  star,
-  locationOutline,
-  wifiOutline,
-  waterOutline,
-  restaurantOutline,
-  snowOutline,
-} from 'ionicons/icons';
+import { arrowBackOutline, chatbubbleEllipsesOutline, star } from 'ionicons/icons';
 
-interface Amenity {
-  id: string;
-  label: string;
-  icon: string;
-}
-
+// Sample destination shown if the page is opened without picking one from Home.
+// Price is per night in Philippine peso (₱).
 const DEFAULT_DESTINATION = {
   name: 'Bali',
   country: 'Indonesia',
   rating: 4.6,
   reviewCount: 4218,
-  price: '₱18,500',
-  heroImage:
-    'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=900&q=80',
+  price: 18500,
+  heroImage: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=900&q=80',
   thumbnails: [
-    'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=900&q=80',
+    'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=300&q=80',
     'https://images.unsplash.com/photo-1544644181-1484b3fdfc62?w=300&q=80',
     'https://images.unsplash.com/photo-1573790387438-4da905039392?w=300&q=80',
-    'https://images.unsplash.com/photo-1518544866330-4d5c4c4b4a5b?w=300&q=80',
   ],
   description:
     "A cliffside retreat overlooking the Indian Ocean, a short walk from Uluwatu's surf breaks. The stay includes a private pool villa, daily breakfast, and airport transfer. Check-in is from 2:00 PM and check-out is 11:00 AM; early check-in is subject to availability. Free cancellation up to 48 hours before arrival, after which one night is charged.",
@@ -44,18 +28,10 @@ const DEFAULT_DESTINATION = {
   templateUrl: './destination-details.page.html',
   styleUrls: ['./destination-details.page.scss'],
   standalone: true,
-  imports: [IonContent, IonIcon, CommonModule, FormsModule],
+  imports: [IonContent, IonIcon, CommonModule],
 })
 export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   destination: any = this.cloneDefault();
-
-  amenities: Amenity[] = [
-    { id: 'wifi', label: 'Free Wi-Fi', icon: 'wifi-outline' },
-    { id: 'pool', label: 'Private pool', icon: 'water-outline' },
-    { id: 'breakfast', label: 'Breakfast', icon: 'restaurant-outline' },
-    { id: 'ac', label: 'Air-conditioned', icon: 'snow-outline' },
-  ];
-
   activeImage = 0;
 
   constructor(private router: Router) {
@@ -63,11 +39,6 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
       'arrow-back-outline': arrowBackOutline,
       'chatbubble-ellipses-outline': chatbubbleEllipsesOutline,
       star: star,
-      'location-outline': locationOutline,
-      'wifi-outline': wifiOutline,
-      'water-outline': waterOutline,
-      'restaurant-outline': restaurantOutline,
-      'snow-outline': snowOutline,
     });
   }
 
@@ -76,9 +47,8 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   }
 
   // Ionic calls this every time the page becomes active again, even if
-  // Angular reused the same component instance for the route. Reading
-  // getCurrentNavigation() only in the constructor meant a second
-  // destination clicked from the list never replaced the first one.
+  // Angular reused the same component instance for the route, so a second
+  // destination picked from Home replaces the first one.
   ionViewWillEnter(): void {
     this.loadDestinationFromState();
   }
@@ -88,7 +58,7 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   }
 
   onMessage() {
-    // TODO: open the conversation with the accommodation/service provider
+    this.router.navigate(['/message']);
   }
 
   onSelectThumbnail(index: number) {
@@ -109,12 +79,14 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
     const incoming = navState.destination;
 
     // Always rebuild from the clean default so leftover fields from a
-    // previously viewed destination (e.g. its thumbnails) can't leak in.
+    // previously viewed destination can't leak in.
     this.destination =
       incoming && typeof incoming === 'object' && 'name' in incoming
         ? { ...this.cloneDefault(), ...incoming }
         : this.cloneDefault();
 
+    // Keep exactly three previews, as in the wireframe.
+    this.destination.thumbnails = (this.destination.thumbnails ?? []).slice(0, 3);
     this.activeImage = 0;
   }
 

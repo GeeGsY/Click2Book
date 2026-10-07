@@ -1,89 +1,88 @@
-<ion-content [fullscreen]="true" class="ion-padding payment-page">
+<ion-content [fullscreen]="true" class="payment-page">
   <div class="payment-shell">
-    <!-- Back + profile -->
+
+    <!-- 1. Back -->
     <div class="top-bar">
       <button class="icon-btn" type="button" aria-label="Back" (click)="goBack()">
         <ion-icon name="arrow-back-outline"></ion-icon>
       </button>
-      <ion-avatar>
-        <img src="https://ionicframework.com/docs/img/demos/avatar.svg" alt="User Avatar" />
-      </ion-avatar>
     </div>
 
-    <h1 class="page-title">Payment</h1>
+    <!-- 2. Reservation details -->
+    <p class="section-label">Reservation details</p>
 
-    <!-- Reservation & Booking Details Section -->
-    <ion-list lines="none" class="info-section">
-      <ion-item class="input-item">
-        <ion-label position="stacked">Selected Accommodation</ion-label>
-        <ion-input [value]="accommodationName" readonly></ion-input>
-      </ion-item>
+    <div class="field">
+      <label for="accommodation">Selected accommodation</label>
+      <input id="accommodation" type="text" [value]="accommodationName" readonly />
+    </div>
 
-      <ion-item class="input-item total-item">
-        <ion-label position="stacked">Booking Total</ion-label>
-        <ion-input [value]="bookingTotal" readonly></ion-input>
-      </ion-item>
-
-      <ion-item class="input-item">
-        <ion-label position="stacked">Discount Code</ion-label>
-        <ion-input [(ngModel)]="discountCode" placeholder="PROMO10"></ion-input>
-      </ion-item>
-
-      <!-- Card fields: number + CVV side by side -->
-      <div class="field-row" *ngIf="selectedPaymentMethod === 'card'">
-        <ion-item class="input-item half-width">
-          <ion-label position="stacked">{{ accountNumberLabel }}</ion-label>
-          <ion-input
-            [(ngModel)]="accountNumber"
-            (ionInput)="onAccountNumberInput($event)"
-            inputmode="numeric"
-            maxlength="19"
-            [placeholder]="accountNumberPlaceholder"
-          ></ion-input>
-        </ion-item>
-
-        <ion-item class="input-item half-width">
-          <ion-label position="stacked">CVV / Security Code</ion-label>
-          <ion-input [(ngModel)]="securityCode" type="password" inputmode="numeric" maxlength="4" placeholder="123"></ion-input>
-        </ion-item>
+    <div class="field-row">
+      <div class="field">
+        <label for="total">Booking total</label>
+        <input
+          id="total"
+          class="total-input"
+          type="text"
+          [value]="bookingTotal | currency: 'PHP' : 'symbol' : '1.0-0'"
+          readonly
+        />
       </div>
 
-      <!-- E-wallet / bank: single account field, no CVV -->
-      <ion-item class="input-item" *ngIf="selectedPaymentMethod !== 'card'">
-        <ion-label position="stacked">{{ accountNumberLabel }}</ion-label>
-        <ion-input
-          [(ngModel)]="accountNumber"
-          (ionInput)="onAccountNumberInput($event)"
+      <div class="field">
+        <label for="discount">Discount code</label>
+        <input id="discount" type="text" placeholder="PROMO10" [(ngModel)]="discountCode" />
+      </div>
+    </div>
+
+    <!-- 3. Account / card details (changes with the chosen method) -->
+    <div class="field">
+      <label for="account">{{ accountNumberLabel }}</label>
+      <input
+        id="account"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        [attr.maxlength]="selectedPaymentMethod === 'card' ? 19 : 16"
+        [placeholder]="accountNumberPlaceholder"
+        [value]="accountNumber"
+        (input)="onAccountNumberInput($event)"
+      />
+    </div>
+
+    <div class="field-row" *ngIf="selectedPaymentMethod === 'card'">
+      <div class="field">
+        <label for="cvv">CVV / security code</label>
+        <input
+          id="cvv"
+          type="password"
           inputmode="numeric"
-          maxlength="16"
-          [placeholder]="accountNumberPlaceholder"
-        ></ion-input>
-      </ion-item>
-    </ion-list>
-
-    <!-- Payment Method Selection Section -->
-    <div class="payment-methods-section">
-      <ion-label class="section-label">Select Payment Method</ion-label>
-      <ion-segment mode="ios" [(ngModel)]="selectedPaymentMethod" (ionChange)="onPaymentMethodChange()" value="card">
-        <ion-segment-button value="ewallet">
-          <ion-label>E-Wallet</ion-label>
-        </ion-segment-button>
-
-        <ion-segment-button value="card">
-          <ion-label>Card</ion-label>
-        </ion-segment-button>
-
-        <ion-segment-button value="bank">
-          <ion-label>Bank</ion-label>
-        </ion-segment-button>
-      </ion-segment>
+          autocomplete="off"
+          maxlength="4"
+          placeholder="123"
+          [value]="securityCode"
+          (input)="onSecurityCodeInput($event)"
+        />
+      </div>
     </div>
 
-    <!-- Action / Submit Button -->
-    <div class="button-container">
-      <ion-button expand="block" [disabled]="!canContinue" (click)="processPayment()">
+    <!-- 4. Payment method -->
+    <p class="section-label methods-label">Select payment method</p>
+    <div class="method-row">
+      <button
+        class="method-btn"
+        type="button"
+        *ngFor="let method of paymentMethods"
+        [class.active]="method.id === selectedPaymentMethod"
+        (click)="onSelectMethod(method.id)"
+      >{{ method.label }}</button>
+    </div>
+
+    <!-- 5. Continue -->
+    <div class="action-row">
+      <button class="primary-btn" type="button" [disabled]="!canContinue" (click)="processPayment()">
         Continue
-      </ion-button>
+      </button>
     </div>
+
   </div>
 </ion-content>

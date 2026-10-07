@@ -2,45 +2,27 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  IonContent,
-  IonIcon,
-  IonAvatar,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonInput,
-  IonSegment,
-  IonSegmentButton,
-  IonButton
-} from '@ionic/angular';
+import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline } from 'ionicons/icons';
+
+interface PaymentMethod {
+  id: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-payment',
   templateUrl: './payment.page.html',
   styleUrls: ['./payment.page.scss'],
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    IonContent,
-    IonIcon,
-    IonAvatar,
-    IonList,
-    IonItem,
-    IonLabel,
-    IonInput,
-    IonSegment,
-    IonSegmentButton,
-    IonButton
-  ]
+  imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
 export class PaymentPage implements OnInit {
   // Booking Data (falls back to placeholders if opened without a booking)
   accommodationName: string = 'Your stay';
-  bookingTotal: string = '₱0';
+  // Total in Philippine peso (₱), shown with the PHP currency pipe
+  bookingTotal: number = 0;
 
   // Payment Form Fields
   discountCode: string = '';
@@ -48,18 +30,24 @@ export class PaymentPage implements OnInit {
   accountNumber: string = '';
   selectedPaymentMethod: string = 'card';
 
+  paymentMethods: PaymentMethod[] = [
+    { id: 'ewallet', label: 'E-Wallet' },
+    { id: 'card', label: 'Card' },
+    { id: 'bank', label: 'Bank' },
+  ];
+
   constructor(private router: Router, private location: Location) {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
 
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as
-      | { accommodationName?: string; bookingTotal?: string }
+      | { accommodationName?: string; bookingTotal?: number }
       | undefined;
 
     if (state?.accommodationName) {
       this.accommodationName = state.accommodationName;
     }
-    if (state?.bookingTotal) {
+    if (typeof state?.bookingTotal === 'number') {
       this.bookingTotal = state.bookingTotal;
     }
   }
@@ -94,8 +82,9 @@ export class PaymentPage implements OnInit {
     return digits.length >= 6;
   }
 
-  onAccountNumberInput(event: CustomEvent): void {
-    const raw = ((event.detail as any)?.value ?? '').toString().replace(/\D/g, '');
+  onAccountNumberInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\D/g, '');
 
     if (this.selectedPaymentMethod === 'card') {
       const digits = raw.slice(0, 16);
@@ -103,6 +92,19 @@ export class PaymentPage implements OnInit {
     } else {
       this.accountNumber = raw.slice(0, 16);
     }
+    input.value = this.accountNumber;
+  }
+
+  onSecurityCodeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.securityCode = input.value.replace(/\D/g, '').slice(0, 4);
+    input.value = this.securityCode;
+  }
+
+  onSelectMethod(id: string): void {
+    if (id === this.selectedPaymentMethod) return;
+    this.selectedPaymentMethod = id;
+    this.onPaymentMethodChange();
   }
 
   onPaymentMethodChange(): void {
@@ -125,6 +127,6 @@ export class PaymentPage implements OnInit {
     });
 
     // Navigate to confirmation screen
-    this.router.navigate(['/booking-confirmation']);
+    this.router.navigate(['/afterpay']);
   }
 }
