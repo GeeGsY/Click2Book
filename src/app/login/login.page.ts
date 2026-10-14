@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -15,6 +15,10 @@ import { AppStateService } from '../services/app-state.service';
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
 export class LoginPage {
+  // The app runs without zone.js, so changes made after an await or from a
+  // lifecycle hook must ask Angular to refresh the view.
+  private cdr = inject(ChangeDetectorRef);
+
   email = '';
   password = '';
   showPassword = false;
@@ -36,12 +40,14 @@ export class LoginPage {
 
     const result = await this.state.login(this.email, this.password);
     this.busy = false;
+    this.cdr.markForCheck();
 
     if (result.ok) {
       this.password = '';
       this.router.navigate(['/home'], { replaceUrl: true });
     } else {
       this.message = result.error ?? 'Could not log in. Please try again.';
+      this.cdr.markForCheck();
     }
   }
 

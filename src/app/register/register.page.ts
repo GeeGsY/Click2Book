@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -15,6 +15,10 @@ import { AppStateService } from '../services/app-state.service';
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
 export class RegisterPage {
+  // The app runs without zone.js, so changes made after an await or from a
+  // lifecycle hook must ask Angular to refresh the view.
+  private cdr = inject(ChangeDetectorRef);
+
   name = '';
   email = '';
   password = '';
@@ -37,6 +41,7 @@ export class RegisterPage {
 
     const result = await this.state.register(this.name, this.email, this.password);
     this.busy = false;
+    this.cdr.markForCheck();
 
     if (result.ok) {
       this.password = '';
@@ -44,6 +49,7 @@ export class RegisterPage {
       this.router.navigate(['/home'], { replaceUrl: true });
     } else {
       this.message = result.error ?? 'Could not create the account. Please try again.';
+      this.cdr.markForCheck();
     }
   }
 

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
@@ -43,6 +43,10 @@ interface SettingRow {
   imports: [CommonModule, IonContent, IonIcon],
 })
 export class UserSettingPage implements ViewWillEnter {
+  // The app runs without zone.js, so changes made after an await or from a
+  // lifecycle hook must ask Angular to refresh the view.
+  private cdr = inject(ChangeDetectorRef);
+
   // Live data from the logged-in account (see AppStateService), refreshed every time
   // the page is shown so new bookings and saved destinations appear straight away.
   user = { name: '', email: '' };
@@ -98,6 +102,7 @@ export class UserSettingPage implements ViewWillEnter {
 
   ionViewWillEnter(): void {
     this.refresh();
+    this.cdr.markForCheck();
   }
 
   private refresh(): void {

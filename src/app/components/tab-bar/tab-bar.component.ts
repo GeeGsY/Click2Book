@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -37,7 +37,10 @@ export class TabBarComponent {
     { label: 'Profile', path: '/user-setting', icon: 'person-outline', iconActive: 'person' },
   ];
 
-  private url: string;
+  // A signal, because the app runs without zone.js and a plain field would not refresh the view.
+  private url = signal('');
+
+  visible = computed(() => this.tabs.some((tab) => this.matches(this.url(), tab)));
 
   constructor(private router: Router, private nav: NavController) {
     addIcons({
@@ -49,26 +52,26 @@ export class TabBarComponent {
       'person-outline': personOutline,
     });
 
-    this.url = this.clean(this.router.url);
+    this.url.set(this.clean(this.router.url));
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
-      .subscribe((e) => (this.url = this.clean(e.urlAfterRedirects)));
-  }
-
-  get visible(): boolean {
-    return this.tabs.some((tab) => this.isActive(tab));
+      .subscribe((e) => this.url.set(this.clean(e.urlAfterRedirects)));
   }
 
   isActive(tab: Tab): boolean {
-    return this.url === tab.path || this.url.startsWith(tab.path + '/');
+    return this.matches(this.url(), tab);
   }
 
   go(tab: Tab): void {
     if (this.isActive(tab)) return;
     this.nav.navigateRoot(tab.path);
+  }
+
+  private matches(url: string, tab: Tab): boolean {
+    return url === tab.path || url.startsWith(tab.path + '/');
   }
 
   private clean(url: string): string {

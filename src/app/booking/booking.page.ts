@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -24,6 +24,10 @@ const DEFAULT_NIGHTLY_RATE = 10000;
   imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class BookingPage implements OnInit, ViewWillEnter {
+  // The app runs without zone.js, so changes made after an await or from a
+  // lifecycle hook must ask Angular to refresh the view.
+  private cdr = inject(ChangeDetectorRef);
+
   // Nightly rate in Philippine peso (₱), taken from the chosen destination
   nightlyRate = DEFAULT_NIGHTLY_RATE;
 
@@ -54,6 +58,7 @@ export class BookingPage implements OnInit, ViewWillEnter {
   // every time it becomes active again.
   ionViewWillEnter(): void {
     this.loadDestinationFromState();
+    this.cdr.markForCheck();
   }
 
   private loadDestinationFromState(): void {

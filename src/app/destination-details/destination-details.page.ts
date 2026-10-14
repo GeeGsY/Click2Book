@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
@@ -31,6 +31,10 @@ const DEFAULT_DESTINATION = {
   imports: [IonContent, IonIcon, CommonModule],
 })
 export class DestinationDetailsPage implements OnInit, ViewWillEnter {
+  // The app runs without zone.js, so changes made after an await or from a
+  // lifecycle hook must ask Angular to refresh the view.
+  private cdr = inject(ChangeDetectorRef);
+
   destination: any = this.cloneDefault();
   activeImage = 0;
 
@@ -51,6 +55,7 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   // destination picked from Home replaces the first one.
   ionViewWillEnter(): void {
     this.loadDestinationFromState();
+    this.cdr.markForCheck();
   }
 
   onBack() {
