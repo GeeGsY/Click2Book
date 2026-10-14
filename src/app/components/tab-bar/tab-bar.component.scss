@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700&display=swap');
+
+// Floating, frosted-glass tab bar in the style of the iOS tab bar
+:host {
+  --ocean: #0e3b43;
+  --ink: #1f2a24;
+
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  padding: 0 22px calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none; // only the bar itself catches taps
+}
+
+.tab-bar {
+  pointer-events: auto;
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  max-width: 380px;
+  padding: 6px;
+  border-radius: 34px;
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 10px 30px rgba(14, 59, 67, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  font-family: 'Manrope', sans-serif;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 7px 4px 6px;
+  border: none;
+  border-radius: 28px;
+  background: transparent;
+  color: rgba(31, 42, 34, 0.55);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+
+  ion-icon {
+    font-size: 24px;
+  }
+
+  span {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+  }
+
+  &.active {
+    background: rgba(14, 59, 67, 0.1);
+    color: var(--ocean);
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+// Browsers without backdrop blur get a more solid bar so text stays readable
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tab-bar {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}

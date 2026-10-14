@@ -1,0 +1,13 @@
+<nav class="tab-bar" *ngIf="visible" aria-label="Main navigation">
+  <button
+    class="tab"
+    type="button"
+    *ngFor="let tab of tabs"
+    [class.active]="isActive(tab)"
+    [attr.aria-current]="isActive(tab) ? 'page' : null"
+    (click)="go(tab)"
+  >
+    <ion-icon [name]="isActive(tab) ? tab.iconActive : tab.icon"></ion-icon>
+    <span>{{ tab.label }}</span>
+  </button>
+</nav>

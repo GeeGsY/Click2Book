@@ -32,11 +32,11 @@ interface UserData {
 
 interface StoredState {
   accounts: Account[];
-  session: string | null; // email of the logged-in account
   data: Record<string, UserData>;
 }
 
 const STORAGE_KEY = 'click2book.state.v1';
+const SESSION_KEY = 'click2book.session.v1';
 
 /**
  * One shared place for the logged-in user, their bookings and saved
@@ -47,6 +47,11 @@ const STORAGE_KEY = 'click2book.state.v1';
 @Injectable({ providedIn: 'root' })
 export class AppStateService {
   private state: StoredState = this.load();
+
+  // Who is logged in. Kept per visit (sessionStorage) instead of forever, so closing
+  // and reopening the app always starts at the Login page. Accounts, bookings and
+  // saved destinations stay saved in localStorage.
+  private session: string | null = this.loadSession();
 
   // ---------- Session ----------
 
@@ -77,7 +82,7 @@ export class AppStateService {
     const passwordHash = await this.hash(cleanEmail, password);
     this.state.accounts.push({ name: cleanName, email: cleanEmail, passwordHash });
     this.state.data[cleanEmail] = { bookings: [], favorites: [] };
-    this.state.session = cleanEmail;
+    this.setSession(cleanEmail);
     this.save();
     return { ok: true };
   }
@@ -94,14 +99,12 @@ export class AppStateService {
       return { ok: false, error: 'Incorrect email or password.' };
     }
 
-    this.state.session = cleanEmail;
-    this.save();
+    this.setSession(cleanEmail);
     return { ok: true };
   }
 
   logout(): void {
-    this.state.session = null;
-    this.save();
+    this.setSession(null);
   }
 
   // ---------- Bookings ----------
@@ -161,12 +164,12 @@ export class AppStateService {
   // ---------- Internals ----------
 
   private currentAccount(): Account | null {
-    const email = this.state.session;
+    const email = this.session;
     return email ? this.state.accounts.find((a) => a.email === email) ?? null : null;
   }
 
   private currentData(): UserData | null {
-    const email = this.state.session;
+    const email = this.session;
     if (!email) return null;
     if (!this.state.data[email]) {
       this.state.data[email] = { bookings: [], favorites: [] };
@@ -208,18 +211,38 @@ export class AppStateService {
   }
 
   private load(): StoredState {
-    const empty: StoredState = { accounts: [], session: null, data: {} };
+    const empty: StoredState = { accounts: [], data: {} };
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return empty;
       const parsed = JSON.parse(raw) as Partial<StoredState>;
       return {
         accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
-        session: typeof parsed.session === 'string' ? parsed.session : null,
         data: parsed.data && typeof parsed.data === 'object' ? parsed.data : {},
       };
     } catch {
       return empty;
+    }
+  }
+
+  private loadSession(): string | null {
+    try {
+      return sessionStorage.getItem(SESSION_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  private setSession(email: string | null): void {
+    this.session = email;
+    try {
+      if (email) {
+        sessionStorage.setItem(SESSION_KEY, email);
+      } else {
+        sessionStorage.removeItem(SESSION_KEY);
+      }
+    } catch {
+      // Storage can be blocked; the login still works until the page is reloaded.
     }
   }
 

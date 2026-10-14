@@ -15,7 +15,7 @@
   --padding-start: 22px;
   --padding-end: 22px;
   --padding-top: 14px;
-  --padding-bottom: 28px;
+  --padding-bottom: calc(110px + env(safe-area-inset-bottom));
   font-family: 'Manrope', sans-serif;
   color: var(--ink);
 }
