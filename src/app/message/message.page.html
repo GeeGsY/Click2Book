@@ -1,13 +1,46 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>message</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="inbox-content" [fullscreen]="true">
+  <div class="inbox-shell">
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">message</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <h1 class="inbox-title">Messages</h1>
+    <p class="inbox-subtitle">Your chats with hosts</p>
+
+    <!-- Conversations, newest first -->
+    <div class="thread-list" *ngIf="threads().length > 0">
+      <button
+        class="thread"
+        type="button"
+        *ngFor="let thread of threads(); trackBy: trackById"
+        (click)="open(thread)"
+      >
+        <span
+          class="avatar"
+          [class.has-image]="!!thread.image"
+          [style.background-image]="thread.image ? 'url(' + thread.image + ')' : null"
+          aria-hidden="true"
+        >{{ thread.image ? '' : initial(thread) }}</span>
+
+        <span class="thread-body">
+          <span class="thread-top">
+            <span class="thread-name">{{ name(thread) }}</span>
+            <span class="thread-time" [class.unread]="thread.unread > 0">{{ time(thread) }}</span>
+          </span>
+          <span class="thread-place" *ngIf="place(thread)">{{ place(thread) }}</span>
+          <span class="thread-bottom">
+            <span class="thread-preview" [class.unread]="thread.unread > 0">{{ preview(thread) }}</span>
+            <span class="unread-badge" *ngIf="thread.unread > 0" [attr.aria-label]="thread.unread + ' unread'">
+              {{ thread.unread > 9 ? '9+' : thread.unread }}
+            </span>
+          </span>
+        </span>
+      </button>
+    </div>
+
+    <!-- Nothing yet -->
+    <div class="empty" *ngIf="threads().length === 0">
+      <ion-icon name="chatbubbles-outline"></ion-icon>
+      <p>No conversations yet.</p>
+      <p class="hint">Open a place and tap the message icon to chat with its host.</p>
+    </div>
+
+  </div>
 </ion-content>

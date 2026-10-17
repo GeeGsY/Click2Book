@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
 export interface UserProfile {
   name: string;
@@ -16,6 +16,31 @@ export interface Booking {
   createdAt: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  from: 'user' | 'host';
+  text: string;
+  sentAt: string; // ISO date-time
+}
+
+export interface ChatThread {
+  id: string; // the conversation name, e.g. "Boracay, Aklan"
+  title: string;
+  image?: string;
+  last: ChatMessage;
+  unread: number;
+}
+
+export interface AppNotification {
+  id: string;
+  type: 'welcome' | 'booking' | 'message';
+  title: string;
+  text: string;
+  createdAt: string;
+  read: boolean;
+  thread?: string; // for message notifications: the conversation to open
+}
+
 export interface AuthResult {
   ok: boolean;
   error?: string;
@@ -28,6 +53,11 @@ interface Account extends UserProfile {
 interface UserData {
   bookings: Booking[];
   favorites: number[];
+  messages?: Record<string, ChatMessage[]>; // one conversation per place, keyed by its name
+  threadImages?: Record<string, string>;
+  lastRead?: Record<string, string>; // when each conversation was last opened
+  notifications?: AppNotification[];
+  starterAdded?: boolean;
 }
 
 interface StoredState {
@@ -37,6 +67,35 @@ interface StoredState {
 
 const STORAGE_KEY = 'click2book.state.v1';
 const SESSION_KEY = 'click2book.session.v1';
+
+// Sample conversations every account starts with, so the inbox is not empty.
+// Remove this list (and the starter code that uses it) once real hosts exist.
+const SAMPLE_CHATS = [
+  {
+    title: 'Palaui Island, Santa Ana, Cagayan',
+    image: 'assets/img/palui1.jpg',
+    text: 'Magandang araw! Welcome to Palaui Island. Boats leave Santa Ana port in the morning, so tell us your arrival time and we will arrange your transfer.',
+    hoursAgo: 3,
+  },
+  {
+    title: 'Anguib Beach, Santa Ana, Cagayan',
+    image: undefined,
+    text: 'Hi! Thanks for your interest in Anguib Beach. Let us know your dates and how many guests are coming.',
+    hoursAgo: 26,
+  },
+  {
+    title: 'Callao Cave, Peñablanca, Cagayan',
+    image: undefined,
+    text: 'Hello! The caves are open daily from 8:00 AM. Ask us anything about tours and nearby stays.',
+    hoursAgo: 50,
+  },
+];
+
+const peso = new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP',
+  maximumFractionDigits: 0,
+});
 
 /**
  * One shared place for the logged-in user, their bookings and saved
@@ -52,6 +111,10 @@ export class AppStateService {
   // and reopening the app always starts at the Login page. Accounts, bookings and
   // saved destinations stay saved in localStorage.
   private session: string | null = this.loadSession();
+
+  // Bumped on every change so screens that read the getters below refresh by themselves
+  // (the app runs without zone.js).
+  private revision = signal(0);
 
   // ---------- Session ----------
 
@@ -123,6 +186,11 @@ export class AppStateService {
       createdAt: new Date().toISOString(),
     };
     data.bookings.push(saved);
+    this.pushNotification(data, {
+      type: 'booking',
+      title: 'Booking confirmed',
+      text: `${booking.destinationName} · ${booking.nights} night${booking.nights === 1 ? '' : 's'} · ${peso.format(booking.total)} paid`,
+    });
     this.save();
     return saved;
   }
@@ -139,6 +207,136 @@ export class AppStateService {
 
   get totalSpent(): number {
     return this.bookings.reduce((sum, b) => sum + b.total, 0);
+  }
+
+  // ---------- Messages ----------
+
+  getMessages(thread: string): ChatMessage[] {
+    return [...(this.currentData()?.messages?.[thread] ?? [])];
+  }
+
+  addMessage(
+    thread: string,
+    from: ChatMessage['from'],
+    text: string,
+    options: { sentAt?: string; notify?: boolean } = {},
+  ): ChatMessage | null {
+    const data = this.currentData();
+    if (!data) return null;
+
+    data.messages ??= {};
+    data.messages[thread] ??= [];
+    const message: ChatMessage = {
+      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      from,
+      text,
+      sentAt: options.sentAt ?? new Date().toISOString(),
+    };
+    data.messages[thread].push(message);
+
+    // A new message from a host that the user is not looking at becomes a notification.
+    if (from === 'host' && options.notify) {
+      this.pushNotification(data, {
+        type: 'message',
+        title: `New message from ${thread.split(',')[0]}`,
+        text,
+        thread,
+      });
+    }
+    this.save();
+    return message;
+  }
+
+  // One entry per conversation, newest first.
+  get threads(): ChatThread[] {
+    this.revision();
+    const data = this.currentData();
+    if (!data?.messages) return [];
+
+    return Object.entries(data.messages)
+      .filter(([, list]) => list.length > 0)
+      .map(([title, list]) => {
+        const readAt = data.lastRead?.[title] ?? '';
+        return {
+          id: title,
+          title,
+          image: data.threadImages?.[title],
+          last: list[list.length - 1],
+          unread: list.filter((m) => m.from === 'host' && m.sentAt > readAt).length,
+        };
+      })
+      .sort((a, b) => b.last.sentAt.localeCompare(a.last.sentAt));
+  }
+
+  markThreadRead(thread: string): void {
+    const data = this.currentData();
+    if (!data) return;
+    data.lastRead ??= {};
+    data.lastRead[thread] = new Date().toISOString();
+    this.save();
+  }
+
+  setThreadImage(thread: string, image: string): void {
+    const data = this.currentData();
+    if (!data || data.threadImages?.[thread] === image) return;
+    data.threadImages ??= {};
+    data.threadImages[thread] = image;
+    this.save();
+  }
+
+  // ---------- Notifications ----------
+
+  get notifications(): AppNotification[] {
+    this.revision();
+    const list = this.currentData()?.notifications ?? [];
+    return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  get unreadNotificationCount(): number {
+    this.revision();
+    return (this.currentData()?.notifications ?? []).filter((n) => !n.read).length;
+  }
+
+  markNotificationRead(id: string): void {
+    const note = this.currentData()?.notifications?.find((n) => n.id === id);
+    if (note && !note.read) {
+      note.read = true;
+      this.save();
+    }
+  }
+
+  markAllNotificationsRead(): void {
+    const list = this.currentData()?.notifications;
+    if (list?.some((n) => !n.read)) {
+      list.forEach((n) => (n.read = true));
+      this.save();
+    }
+  }
+
+  // Adds the welcome notification and the sample conversations once per account.
+  ensureStarterData(): void {
+    const data = this.currentData();
+    if (!data || data.starterAdded) return;
+
+    data.starterAdded = true;
+    this.pushNotification(data, {
+      type: 'welcome',
+      title: 'Welcome to Click2Book',
+      text: 'Search a destination, pick your dates, and book in a few taps. Your chats and bookings will show up here.',
+    });
+
+    if (!data.messages || Object.keys(data.messages).length === 0) {
+      data.messages = {};
+      data.threadImages = {};
+      for (const chat of SAMPLE_CHATS) {
+        const sentAt = new Date(Date.now() - chat.hoursAgo * 3600 * 1000).toISOString();
+        data.messages[chat.title] = [
+          { id: `sample-${chat.title}`, from: 'host', text: chat.text, sentAt },
+        ];
+        if (chat.image) data.threadImages[chat.title] = chat.image;
+      }
+    }
+    this.save();
   }
 
   // ---------- Saved destinations ----------
@@ -162,6 +360,19 @@ export class AppStateService {
   }
 
   // ---------- Internals ----------
+
+  private pushNotification(
+    data: UserData,
+    note: Pick<AppNotification, 'type' | 'title' | 'text' | 'thread'>,
+  ): void {
+    data.notifications ??= [];
+    data.notifications.push({
+      ...note,
+      id: `n-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
+  }
 
   private currentAccount(): Account | null {
     const email = this.session;
@@ -244,9 +455,14 @@ export class AppStateService {
     } catch {
       // Storage can be blocked; the login still works until the page is reloaded.
     }
+    if (email) {
+      this.ensureStarterData();
+    }
+    this.revision.update((v) => v + 1);
   }
 
   private save(): void {
+    this.revision.update((v) => v + 1);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
     } catch {

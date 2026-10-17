@@ -1,0 +1,45 @@
+<ion-content class="notifications-content" [fullscreen]="true">
+  <div class="notifications-shell">
+
+    <!-- 1. Back + mark all as read -->
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <button class="mark-all" type="button" *ngIf="hasUnread" (click)="markAllRead()">
+        Mark all as read
+      </button>
+    </div>
+
+    <h1 class="page-title">Notifications</h1>
+
+    <!-- 2. Newest first -->
+    <div class="list" *ngIf="items().length > 0">
+      <button
+        class="item"
+        type="button"
+        *ngFor="let item of items(); trackBy: trackById"
+        [class.unread]="!item.read"
+        (click)="open(item)"
+      >
+        <span class="icon" aria-hidden="true">
+          <ion-icon [name]="iconFor(item)"></ion-icon>
+        </span>
+        <span class="body">
+          <span class="item-top">
+            <span class="item-title">{{ item.title }}</span>
+            <span class="item-time">{{ when(item) }}</span>
+          </span>
+          <span class="item-text">{{ item.text }}</span>
+        </span>
+        <span class="dot" *ngIf="!item.read" aria-label="Unread"></span>
+      </button>
+    </div>
+
+    <div class="empty" *ngIf="items().length === 0">
+      <ion-icon name="notifications-outline"></ion-icon>
+      <p>You're all caught up.</p>
+    </div>
+
+  </div>
+</ion-content>

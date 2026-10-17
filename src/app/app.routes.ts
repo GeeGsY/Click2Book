@@ -48,6 +48,17 @@ export const routes: Routes = [
     loadComponent: () => import('./message/message.page').then((m) => m.MessagePage),
   },
   {
+    path: 'chat',
+    canActivate: [authGuard],
+    loadComponent: () => import('./chat/chat.page').then((m) => m.ChatPage),
+  },
+  {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./notifications/notifications.page').then((m) => m.NotificationsPage),
+  },
+  {
     path: 'user-setting',
     canActivate: [authGuard],
     loadComponent: () => import('./user-setting/user-setting.page').then((m) => m.UserSettingPage),

@@ -596,11 +596,14 @@ export class HomePage {
   // QUICK ACCESS / NOTIFICATIONS
   // ============================================================
 
+  // Unread notifications shown on the bell. Reads a signal inside the service,
+  // so the badge refreshes by itself.
+  get unreadNotifications(): number {
+    return this.state.unreadNotificationCount;
+  }
+
   onQuickAccess() {
-
-    // TODO:
-    // Open notifications or account shortcuts.
-
+    this.router.navigate(['/notifications']);
   }
 
 

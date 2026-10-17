@@ -1,0 +1,61 @@
+<ion-content class="chat-content" [fullscreen]="true">
+  <div class="chat-shell">
+
+    <!-- 1. Back -->
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- 2. Who you are talking to -->
+    <div class="chat-header">
+      <h1>{{ title() }}</h1>
+      <p>Prototype chat &middot; replies are automatic</p>
+    </div>
+
+    <!-- 3. Conversation -->
+    <section class="chat-panel">
+      <div class="messages" #scroller role="log" aria-live="polite">
+        <div
+          class="bubble-row"
+          *ngFor="let message of messages(); trackBy: trackById"
+          [class.mine]="message.from === 'user'"
+        >
+          <div class="bubble">
+            <span class="text">{{ message.text }}</span>
+            <span class="time">{{ message.sentAt | date: 'shortTime' }}</span>
+          </div>
+        </div>
+
+        <div class="bubble-row" *ngIf="typing()">
+          <div class="bubble typing" aria-label="The host is typing">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Message box -->
+      <div class="composer">
+        <input
+          type="text"
+          placeholder="Type a message"
+          maxlength="500"
+          autocomplete="off"
+          aria-label="Message"
+          [(ngModel)]="draft"
+          (keydown.enter)="send()"
+        />
+        <button class="send-btn" type="button" (click)="send()" aria-label="Send message">
+          <ion-icon name="send"></ion-icon>
+        </button>
+      </div>
+    </section>
+
+    <!-- 5. Only after a payment -->
+    <div class="after-payment" *ngIf="afterPayment()">
+      <button class="home-btn" type="button" (click)="goHome()">Back to home</button>
+    </div>
+
+  </div>
+</ion-content>

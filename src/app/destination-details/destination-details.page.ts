@@ -63,7 +63,12 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   }
 
   onMessage() {
-    this.router.navigate(['/message']);
+    const title = this.destination.country
+      ? `${this.destination.name}, ${this.destination.country}`
+      : this.destination.name;
+    this.router.navigate(['/chat'], {
+      state: { destinationName: title, image: this.destination.thumbnails?.[0] ?? this.destination.heroImage },
+    });
   }
 
   onSelectThumbnail(index: number) {

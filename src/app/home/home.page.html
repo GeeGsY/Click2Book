@@ -8,6 +8,7 @@
       </button>
       <button class="icon-btn dark" type="button" (click)="onQuickAccess()" aria-label="Notifications">
         <ion-icon name="notifications-outline"></ion-icon>
+        <span class="badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications > 9 ? '9+' : unreadNotifications }}</span>
       </button>
     </div>
 

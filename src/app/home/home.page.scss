@@ -47,7 +47,27 @@
     font-size: 24px;
     color: var(--ocean);
     cursor: pointer;
+    position: relative;
     transition: opacity 0.15s ease;
+
+    .badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 2px solid var(--sand);
+      background: var(--coral);
+      color: #ffffff;
+      font-family: 'Manrope', sans-serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      line-height: 16px;
+      text-align: center;
+    }
 
     &.dark {
       background: var(--ocean);
