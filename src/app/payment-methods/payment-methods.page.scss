@@ -1,0 +1,112 @@
+@use '../../theme/sub-page';
+
+.type-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+
+  .type-btn {
+    min-height: 38px;
+    border: none;
+    border-radius: 12px;
+    background: var(--sand);
+    color: var(--ocean);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &.active {
+      background: var(--ocean);
+      color: #ffffff;
+    }
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.add-card {
+  margin-bottom: 16px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.method {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .method-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .method-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--sand);
+    color: var(--teal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .method-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .method-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ocean);
+  }
+
+  .badge {
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--coral);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+
+  .method-sub {
+    font-size: 12.5px;
+    color: rgba(31, 42, 34, 0.55);
+  }
+
+  .method-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .confirm-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #c4412d;
+  }
+
+  .solid-danger {
+    background: #c4412d;
+    color: #ffffff;
+  }
+}

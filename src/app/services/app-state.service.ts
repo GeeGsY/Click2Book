@@ -3,6 +3,7 @@ import { Injectable, signal } from '@angular/core';
 export interface UserProfile {
   name: string;
   email: string;
+  phone?: string;
 }
 
 export interface Booking {
@@ -14,6 +15,32 @@ export interface Booking {
   total: number; // Philippine peso (₱)
   method: string;
   createdAt: string;
+  status?: 'confirmed' | 'cancelled';
+  cancelledAt?: string;
+}
+
+export type BookingStatus = 'upcoming' | 'completed' | 'cancelled';
+
+// Only the last 4 digits of a number are ever kept.
+export interface PaymentMethodInfo {
+  id: string;
+  type: 'ewallet' | 'card' | 'bank';
+  label: string;
+  last4: string;
+  isDefault: boolean;
+}
+
+// A copy of a place when it is saved, so Saved destinations can show it later.
+export interface SavedPlace {
+  id: number;
+  name: string;
+  country: string;
+  price: number;
+  rating: number;
+  reviewCount: number;
+  image: string;
+  description: string;
+  gallery?: string[];
 }
 
 export interface ChatMessage {
@@ -58,6 +85,8 @@ interface UserData {
   lastRead?: Record<string, string>; // when each conversation was last opened
   notifications?: AppNotification[];
   starterAdded?: boolean;
+  paymentMethods?: PaymentMethodInfo[];
+  savedPlaces?: Record<number, SavedPlace>;
 }
 
 interface StoredState {
@@ -120,7 +149,53 @@ export class AppStateService {
 
   get user(): UserProfile | null {
     const account = this.currentAccount();
-    return account ? { name: account.name, email: account.email } : null;
+    return account ? { name: account.name, email: account.email, phone: account.phone ?? '' } : null;
+  }
+
+  updateProfile(name: string, phone: string): AuthResult {
+    const account = this.currentAccount();
+    if (!account) return { ok: false, error: 'You are not logged in.' };
+
+    const cleanName = name.trim();
+    if (cleanName.length < 2) return { ok: false, error: 'Please enter your name.' };
+
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+    if (cleanPhone && !/^(09\d{9}|\+?639\d{9})$/.test(cleanPhone)) {
+      return { ok: false, error: 'Enter a valid mobile number, like 0917 123 4567.' };
+    }
+
+    account.name = cleanName;
+    account.phone = cleanPhone;
+    this.save();
+    return { ok: true };
+  }
+
+  async changePassword(current: string, next: string): Promise<AuthResult> {
+    const account = this.currentAccount();
+    if (!account) return { ok: false, error: 'You are not logged in.' };
+
+    if ((await this.hash(account.email, current)) !== account.passwordHash) {
+      return { ok: false, error: 'Your current password is incorrect.' };
+    }
+    if (next.length < 6) return { ok: false, error: 'The new password must be at least 6 characters.' };
+    if (next === current) {
+      return { ok: false, error: 'Choose a password that is different from your current one.' };
+    }
+
+    account.passwordHash = await this.hash(account.email, next);
+    this.save();
+    return { ok: true };
+  }
+
+  // Removes the account and everything saved for it (bookings, chats, saved places).
+  deleteAccount(): void {
+    const email = this.session;
+    if (!email) return;
+
+    this.state.accounts = this.state.accounts.filter((a) => a.email !== email);
+    delete this.state.data[email];
+    this.setSession(null);
+    this.save();
   }
 
   get isLoggedIn(): boolean {
@@ -182,7 +257,7 @@ export class AppStateService {
 
     const saved: Booking = {
       ...booking,
-      id: `C2B-${Date.now().toString(36).toUpperCase()}`,
+      id: `C2B-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
       createdAt: new Date().toISOString(),
     };
     data.bookings.push(saved);
@@ -195,18 +270,60 @@ export class AppStateService {
     return saved;
   }
 
+  getBooking(id: string): Booking | null {
+    return this.bookings.find((b) => b.id === id) ?? null;
+  }
+
+  get latestBooking(): Booking | null {
+    const list = this.bookings;
+    return list.length > 0 ? list[list.length - 1] : null;
+  }
+
+  statusOf(booking: Booking): BookingStatus {
+    if (booking.status === 'cancelled') return 'cancelled';
+    return booking.checkOut < this.todayIso() ? 'completed' : 'upcoming';
+  }
+
+  // Free cancellation until 48 hours before check-in (2:00 PM), as the place descriptions say.
+  canCancel(booking: Booking): boolean {
+    if (this.statusOf(booking) !== 'upcoming') return false;
+    const checkInTime = new Date(`${booking.checkIn}T14:00:00`).getTime();
+    return checkInTime - Date.now() >= 48 * 60 * 60 * 1000;
+  }
+
+  cancelBooking(id: string): AuthResult {
+    const data = this.currentData();
+    const booking = data?.bookings.find((b) => b.id === id);
+    if (!data || !booking) return { ok: false, error: 'Booking not found.' };
+
+    if (!this.canCancel(booking)) {
+      return { ok: false, error: 'Free cancellation has closed for this booking (less than 48 hours to check-in).' };
+    }
+
+    booking.status = 'cancelled';
+    booking.cancelledAt = new Date().toISOString();
+    this.pushNotification(data, {
+      type: 'booking',
+      title: 'Booking cancelled',
+      text: `${booking.destinationName} · ${peso.format(booking.total)} will be refunded (prototype)`,
+    });
+    this.save();
+    return { ok: true };
+  }
+
   get upcomingCount(): number {
-    const today = this.todayIso();
-    return this.bookings.filter((b) => b.checkOut >= today).length;
+    return this.bookings.filter((b) => this.statusOf(b) === 'upcoming').length;
   }
 
   get completedCount(): number {
-    const today = this.todayIso();
-    return this.bookings.filter((b) => b.checkOut < today).length;
+    return this.bookings.filter((b) => this.statusOf(b) === 'completed').length;
   }
 
+  // Cancelled bookings are refunded, so they do not count as spent.
   get totalSpent(): number {
-    return this.bookings.reduce((sum, b) => sum + b.total, 0);
+    return this.bookings
+      .filter((b) => b.status !== 'cancelled')
+      .reduce((sum, b) => sum + b.total, 0);
   }
 
   // ---------- Messages ----------
@@ -349,13 +466,104 @@ export class AppStateService {
     return this.currentData()?.favorites.includes(destinationId) ?? false;
   }
 
-  toggleFavorite(destinationId: number): void {
+  toggleFavorite(destinationId: number, place?: SavedPlace): void {
     const data = this.currentData();
     if (!data) return;
 
-    data.favorites = data.favorites.includes(destinationId)
-      ? data.favorites.filter((id) => id !== destinationId)
-      : [...data.favorites, destinationId];
+    if (data.favorites.includes(destinationId)) {
+      data.favorites = data.favorites.filter((id) => id !== destinationId);
+      if (data.savedPlaces) delete data.savedPlaces[destinationId];
+    } else {
+      data.favorites = [...data.favorites, destinationId];
+      if (place) {
+        data.savedPlaces ??= {};
+        data.savedPlaces[destinationId] = place;
+      }
+    }
+    this.save();
+  }
+
+  // Fills in the copy of a place that was saved before copies were kept.
+  rememberFavorite(destinationId: number, place: SavedPlace): void {
+    const data = this.currentData();
+    if (!data || !data.favorites.includes(destinationId) || data.savedPlaces?.[destinationId]) return;
+
+    data.savedPlaces ??= {};
+    data.savedPlaces[destinationId] = place;
+    this.save();
+  }
+
+  // Saved places, most recently saved first.
+  get savedPlaces(): SavedPlace[] {
+    this.revision();
+    const data = this.currentData();
+    if (!data) return [];
+
+    return [...data.favorites]
+      .reverse()
+      .map((id) => data.savedPlaces?.[id])
+      .filter((place): place is SavedPlace => !!place);
+  }
+
+  // ---------- Payment methods ----------
+
+  get paymentMethods(): PaymentMethodInfo[] {
+    this.revision();
+    return [...(this.currentData()?.paymentMethods ?? [])];
+  }
+
+  get defaultPaymentMethod(): PaymentMethodInfo | null {
+    return this.paymentMethods.find((m) => m.isDefault) ?? null;
+  }
+
+  addPaymentMethod(type: PaymentMethodInfo['type'], label: string, number: string): AuthResult {
+    const data = this.currentData();
+    if (!data) return { ok: false, error: 'You are not logged in.' };
+
+    const name = label.trim();
+    const digits = number.replace(/\D/g, '');
+    const limits = { ewallet: [10, 12], card: [13, 19], bank: [8, 16] }[type];
+    const numberName = { ewallet: 'mobile number', card: 'card number', bank: 'account number' }[type];
+
+    if (name.length < 2) return { ok: false, error: 'Give this payment method a name, like GCash or BPI Visa.' };
+    if (digits.length < limits[0] || digits.length > limits[1]) {
+      return { ok: false, error: `Enter a valid ${numberName}.` };
+    }
+
+    data.paymentMethods ??= [];
+    if (data.paymentMethods.length >= 5) {
+      return { ok: false, error: 'You can save up to 5 payment methods. Remove one first.' };
+    }
+
+    // Only the last 4 digits are kept; the full number is never stored.
+    data.paymentMethods.push({
+      id: `pm-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`,
+      type,
+      label: name,
+      last4: digits.slice(-4),
+      isDefault: data.paymentMethods.length === 0,
+    });
+    this.save();
+    return { ok: true };
+  }
+
+  removePaymentMethod(id: string): void {
+    const data = this.currentData();
+    if (!data?.paymentMethods) return;
+
+    const wasDefault = data.paymentMethods.find((m) => m.id === id)?.isDefault;
+    data.paymentMethods = data.paymentMethods.filter((m) => m.id !== id);
+    if (wasDefault && data.paymentMethods.length > 0) {
+      data.paymentMethods[0].isDefault = true;
+    }
+    this.save();
+  }
+
+  setDefaultPaymentMethod(id: string): void {
+    const data = this.currentData();
+    if (!data?.paymentMethods) return;
+
+    data.paymentMethods.forEach((m) => (m.isDefault = m.id === id));
     this.save();
   }
 

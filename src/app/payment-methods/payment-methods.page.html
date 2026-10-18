@@ -1,0 +1,95 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <button class="link-btn" type="button" *ngIf="!adding()" (click)="startAdding()">
+        <ion-icon name="add-outline"></ion-icon> Add new
+      </button>
+    </div>
+
+    <h1 class="page-title">Payment methods</h1>
+    <p class="page-subtitle">
+      Your default method is chosen for you at checkout. Only the last 4 digits are kept.
+    </p>
+
+    <!-- Add form -->
+    <form class="card add-card" *ngIf="adding()" (ngSubmit)="add()" novalidate>
+      <div class="type-row" role="radiogroup" aria-label="Payment type">
+        <button
+          type="button"
+          class="type-btn"
+          *ngFor="let t of types"
+          [class.active]="formType() === t.id"
+          [attr.aria-checked]="formType() === t.id"
+          role="radio"
+          (click)="formType.set(t.id)"
+        >{{ t.label }}</button>
+      </div>
+
+      <div class="field">
+        <label for="label">Name</label>
+        <input id="label" name="label" type="text" maxlength="30" [placeholder]="labelPlaceholder()" [(ngModel)]="label" />
+      </div>
+
+      <div class="field">
+        <label for="number">{{ numberLabel() }}</label>
+        <input
+          id="number"
+          name="number"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          maxlength="23"
+          [(ngModel)]="number"
+        />
+      </div>
+
+      <p class="notice" *ngIf="message()" role="alert">{{ message() }}</p>
+
+      <div class="form-actions">
+        <button class="secondary-btn" type="button" (click)="cancelAdding()">Cancel</button>
+        <button class="primary-btn" type="submit">Save</button>
+      </div>
+    </form>
+
+    <!-- Saved methods -->
+    <div class="list" *ngIf="methods().length > 0">
+      <div class="method card" *ngFor="let method of methods(); trackBy: trackById">
+        <div class="method-main">
+          <span class="method-icon" aria-hidden="true"><ion-icon [name]="iconFor(method.type)"></ion-icon></span>
+          <span class="method-text">
+            <span class="method-name">
+              {{ method.label }}
+              <span class="badge" *ngIf="method.isDefault">Default</span>
+            </span>
+            <span class="method-sub">{{ typeName(method.type) }} &middot; &bull;&bull;&bull;&bull; {{ method.last4 }}</span>
+          </span>
+        </div>
+
+        <div class="method-actions">
+          <ng-container *ngIf="confirmRemoveId() !== method.id; else confirmRemove">
+            <button class="small-btn" type="button" *ngIf="!method.isDefault" (click)="makeDefault(method)">
+              Make default
+            </button>
+            <button class="small-btn danger" type="button" (click)="remove(method)">Remove</button>
+          </ng-container>
+          <ng-template #confirmRemove>
+            <span class="confirm-text">Remove this method?</span>
+            <button class="small-btn danger solid-danger" type="button" (click)="remove(method)">Yes, remove</button>
+            <button class="small-btn" type="button" (click)="confirmRemoveId.set(null)">Keep</button>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="methods().length === 0 && !adding()">
+      <ion-icon name="card-outline"></ion-icon>
+      <p>No payment methods yet.</p>
+      <p class="hint">Add a GCash number, a card or a bank account to check out faster.</p>
+    </div>
+
+  </div>
+</ion-content>

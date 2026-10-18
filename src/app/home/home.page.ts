@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppStateService } from '../services/app-state.service';
-import { IonContent, IonIcon } from '@ionic/angular';
+import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 
 import {
@@ -80,7 +80,7 @@ const GALLERY_PHOTOS = [
 })
 
 
-export class HomePage {
+export class HomePage implements ViewWillEnter {
 
   // Search box value
   searchTerm = '';
@@ -667,6 +667,30 @@ export class HomePage {
   // FAVORITE BUTTON
   // ============================================================
 
+  // Places saved before copies were kept get their copy the next time Home is shown.
+  ionViewWillEnter(): void {
+    for (const dest of this.destinations) {
+      if (this.state.isFavorite(dest.id)) {
+        this.state.rememberFavorite(dest.id, this.snapshot(dest));
+      }
+    }
+  }
+
+  private snapshot(dest: Destination) {
+    return {
+      id: dest.id,
+      name: dest.name,
+      country: dest.country,
+      price: dest.price,
+      rating: dest.rating,
+      reviewCount: dest.reviewCount,
+      image: dest.image,
+      description: dest.description,
+      // only present when a place has its own photo gallery
+      gallery: (dest as unknown as { gallery?: string[] }).gallery,
+    };
+  }
+
   isFavorite(dest: Destination): boolean {
     return this.state.isFavorite(dest.id);
   }
@@ -681,7 +705,7 @@ export class HomePage {
     event.stopPropagation();
 
 
-    this.state.toggleFavorite(dest.id);
+    this.state.toggleFavorite(dest.id, this.snapshot(dest));
 
   }
 

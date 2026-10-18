@@ -1,0 +1,41 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">Help and support</h1>
+    <p class="page-subtitle">Quick answers, or message us if you are stuck.</p>
+
+    <!-- Contact -->
+    <div class="card contact">
+      <ion-icon name="chatbubbles-outline" aria-hidden="true"></ion-icon>
+      <div class="contact-text">
+        <strong>Need a hand?</strong>
+        <span>Chat with Click2Book Support. Replies are automatic in this prototype.</span>
+      </div>
+      <button class="small-btn solid" type="button" (click)="chatWithSupport()">Chat</button>
+    </div>
+
+    <!-- FAQ -->
+    <h2 class="section-title">Frequently asked questions</h2>
+    <div class="faq-list">
+      <div class="faq" *ngFor="let faq of faqs; let i = index" [class.open]="openIndex() === i">
+        <button
+          class="faq-question"
+          type="button"
+          [attr.aria-expanded]="openIndex() === i"
+          (click)="toggle(i)"
+        >
+          <span>{{ faq.question }}</span>
+          <ion-icon name="chevron-down" aria-hidden="true"></ion-icon>
+        </button>
+        <p class="faq-answer" *ngIf="openIndex() === i">{{ faq.answer }}</p>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

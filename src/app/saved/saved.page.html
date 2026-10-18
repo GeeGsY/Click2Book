@@ -1,0 +1,44 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">Saved destinations</h1>
+    <p class="page-subtitle">Places you tapped the heart on. Open one to book it.</p>
+
+    <div class="list" *ngIf="places().length > 0">
+      <div
+        class="place"
+        role="button"
+        tabindex="0"
+        *ngFor="let place of places(); trackBy: trackById"
+        (click)="open(place)"
+        (keydown.enter)="open(place)"
+      >
+        <span class="photo" [style.background-image]="'url(' + place.image + ')'" aria-hidden="true"></span>
+        <span class="info">
+          <span class="name">{{ place.name }}</span>
+          <span class="where">{{ place.country }}</span>
+          <span class="meta">
+            <span class="rating"><ion-icon name="star"></ion-icon> {{ place.rating }}</span>
+            <span class="price">{{ place.price | currency: 'PHP' : 'symbol' : '1.0-0' }}<small> / night</small></span>
+          </span>
+        </span>
+        <button class="heart-btn" type="button" (click)="unsave(place, $event)" [attr.aria-label]="'Remove ' + place.name + ' from saved'">
+          <ion-icon name="heart"></ion-icon>
+        </button>
+      </div>
+    </div>
+
+    <div class="empty" *ngIf="places().length === 0">
+      <ion-icon name="heart-outline"></ion-icon>
+      <p>No saved destinations yet.</p>
+      <p class="hint">Tap the heart on a place in Home to keep it here.</p>
+    </div>
+
+  </div>
+</ion-content>

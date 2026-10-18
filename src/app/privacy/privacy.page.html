@@ -1,0 +1,64 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">Privacy information</h1>
+    <p class="page-subtitle">What Click2Book keeps about you, and what you can do about it.</p>
+
+    <section class="card block">
+      <h2>What we keep</h2>
+      <ul>
+        <li>Your name, email and optional mobile number.</li>
+        <li>A scrambled (hashed) version of your password, never the password itself.</li>
+        <li>Your bookings, saved destinations, chats and notifications.</li>
+        <li>For each saved payment method, only its name and the last 4 digits.</li>
+      </ul>
+    </section>
+
+    <section class="card block">
+      <h2>Where it is kept</h2>
+      <p>
+        On this device, in the browser's storage. This prototype has no server, so your details are not
+        sent to us or shared with anyone. Photos and fonts are loaded from the internet (Unsplash and
+        Google Fonts), so those sites can see that the app was opened.
+      </p>
+    </section>
+
+    <section class="card block">
+      <h2>Your choices</h2>
+      <ul>
+        <li>Change your name or number under Personal information.</li>
+        <li>Change your password under Change password.</li>
+        <li>Remove saved payment methods under Manage payment methods.</li>
+        <li>Delete your account and everything saved for it, below.</li>
+      </ul>
+    </section>
+
+    <section class="card block">
+      <h2>In a full release</h2>
+      <p>
+        A real version would keep data on a secure server, check passwords there, and have its privacy
+        policy reviewed under the Philippine Data Privacy Act of 2012 (Republic Act 10173).
+      </p>
+    </section>
+
+    <!-- Delete -->
+    <section class="delete">
+      <p class="delete-warning" *ngIf="confirmingDelete()">
+        This permanently deletes your account, bookings, chats and saved places on this device. It cannot be undone.
+      </p>
+      <button class="danger-btn" type="button" (click)="deleteAccount()">
+        {{ confirmingDelete() ? 'Yes, delete everything' : 'Delete my account and data' }}
+      </button>
+      <button class="secondary-btn" type="button" *ngIf="confirmingDelete()" (click)="confirmingDelete.set(false)">
+        Keep my account
+      </button>
+    </section>
+
+  </div>
+</ion-content>

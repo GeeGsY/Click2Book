@@ -1,13 +1,66 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>afterpay</ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content class="afterpay-content" [fullscreen]="true">
+  <div class="afterpay-shell" *ngIf="booking() as b">
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">afterpay</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <!-- 1. Done -->
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goHome()" aria-label="Close and go to home">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- 2. Confirmation card -->
+    <section class="card" aria-label="Booking confirmation">
+      <div class="status">
+        <ion-icon name="checkmark-circle" aria-hidden="true"></ion-icon>
+        <h1>Booking confirmed</h1>
+        <p>Your payment was received.</p>
+      </div>
+
+      <dl class="details">
+        <div class="row">
+          <dt>Booking reference</dt>
+          <dd class="reference">{{ b.id }}</dd>
+        </div>
+        <div class="row">
+          <dt>Stay</dt>
+          <dd>{{ b.destinationName }}</dd>
+        </div>
+        <div class="row">
+          <dt>Dates</dt>
+          <dd>
+            {{ b.checkIn | date: 'MMM d, y' }} &rarr; {{ b.checkOut | date: 'MMM d, y' }}
+            <span class="sub">{{ b.nights }} night{{ b.nights === 1 ? '' : 's' }}</span>
+          </dd>
+        </div>
+        <div class="row" *ngIf="guest() as g">
+          <dt>Guest</dt>
+          <dd>
+            {{ g.name }}
+            <span class="sub">{{ g.email }}</span>
+          </dd>
+        </div>
+        <div class="row total">
+          <dt>Amount paid</dt>
+          <dd>
+            {{ b.total | currency: 'PHP' : 'symbol' : '1.0-0' }}
+            <span class="sub">via {{ b.method }}</span>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <button class="receipt-btn" type="button" (click)="downloadReceipt()">
+      <ion-icon name="download-outline"></ion-icon>
+      Download receipt (PDF)
+    </button>
+
+    <p class="note">Prototype: no real payment was made.</p>
+
+    <!-- 3. Next steps -->
+    <div class="actions">
+      <button class="btn secondary" type="button" (click)="goHome()">Back to home</button>
+      <button class="btn primary" type="button" (click)="messageHost()">Message host</button>
+    </div>
+
+  </div>
 </ion-content>

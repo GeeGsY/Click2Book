@@ -56,6 +56,9 @@ export class UserSettingPage implements ViewWillEnter {
 
   tiles: SummaryTile[] = [];
 
+  // Short summaries shown on the right of some rows.
+  meta: Record<string, string> = {};
+
   // Settings panel, grouped as in the wireframe (3 + 3 + privacy/logout).
   groups: SettingRow[][] = [
     [
@@ -109,6 +112,12 @@ export class UserSettingPage implements ViewWillEnter {
     const account = this.appState.user;
     this.user = account ?? { name: 'Guest', email: 'Not logged in' };
     this.totalSpent = this.appState.totalSpent;
+    const defaultMethod = this.appState.defaultPaymentMethod;
+    const unread = this.appState.unreadNotificationCount;
+    this.meta = {
+      payment: defaultMethod ? defaultMethod.label : '',
+      notifications: unread > 0 ? `${unread} new` : '',
+    };
     this.tiles = [
       { id: 'upcoming', label: 'Upcoming bookings', value: this.appState.upcomingCount, icon: 'calendar-outline' },
       { id: 'completed', label: 'Completed trips', value: this.appState.completedCount, icon: 'checkmark-done-outline' },
@@ -129,22 +138,34 @@ export class UserSettingPage implements ViewWillEnter {
   }
 
   onEditProfile() {
-    // TODO: open the edit-profile form (name, email, photo)
+    this.router.navigate(['/edit-profile']);
   }
 
   onTileTap(tile: SummaryTile) {
-    // TODO: open the matching list (upcoming bookings, completed trips, saved destinations)
+    if (tile.id === 'saved') {
+      this.router.navigate(['/saved']);
+    } else {
+      // upcoming and completed open the booking history on that filter
+      this.router.navigate(['/bookings'], { state: { filter: tile.id } });
+    }
   }
 
+  // Each row opens its own screen.
+  private readonly routes: Record<string, string> = {
+    personal: '/edit-profile',
+    password: '/change-password',
+    payment: '/payment-methods',
+    history: '/bookings',
+    notifications: '/notifications',
+    help: '/help',
+    privacy: '/privacy',
+  };
+
   onRowTap(row: SettingRow) {
-    // TODO: connect each setting to its own screen. Intended function per row:
-    //  personal      -> edit name, email, phone
-    //  password      -> change password
-    //  payment       -> saved e-wallet / card / bank details
-    //  history       -> past and upcoming reservations
-    //  notifications -> booking and message alerts
-    //  help          -> FAQs and contact support
-    //  privacy       -> privacy policy and data information
+    const route = this.routes[row.id];
+    if (route) {
+      this.router.navigate([route]);
+    }
   }
 
   onLogout() {

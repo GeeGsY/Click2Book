@@ -1,0 +1,44 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">Personal information</h1>
+    <p class="page-subtitle">Update the details hosts see when you book.</p>
+
+    <form class="card" (ngSubmit)="save()" novalidate>
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" autocomplete="name" [(ngModel)]="name" />
+      </div>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" [value]="email" readonly />
+        <span class="hint">Your email is your login, so it can't be changed in this prototype.</span>
+      </div>
+
+      <div class="field">
+        <label for="phone">Mobile number (optional)</label>
+        <input
+          id="phone"
+          name="phone"
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          placeholder="0917 123 4567"
+          [(ngModel)]="phone"
+        />
+      </div>
+
+      <p class="notice" *ngIf="message()" role="alert">{{ message() }}</p>
+
+      <button class="primary-btn" type="submit">Save changes</button>
+    </form>
+
+  </div>
+</ion-content>

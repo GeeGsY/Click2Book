@@ -1,0 +1,84 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">Booking history</h1>
+    <p class="page-subtitle">
+      {{ all().length }} booking{{ all().length === 1 ? '' : 's' }} &middot;
+      {{ totalSpent() | currency: 'PHP' : 'symbol' : '1.0-0' }} spent
+    </p>
+
+    <!-- Filters -->
+    <div class="filters" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="filter"
+        *ngFor="let f of filters"
+        [class.active]="filter() === f.id"
+        [attr.aria-selected]="filter() === f.id"
+        (click)="filter.set(f.id)"
+      >{{ f.label }} <span class="count">{{ count(f.id) }}</span></button>
+    </div>
+
+    <p class="notice" *ngIf="message()" role="alert">{{ message() }}</p>
+
+    <!-- Bookings -->
+    <div class="list" *ngIf="visible().length > 0">
+      <article class="booking" *ngFor="let b of visible(); trackBy: trackById">
+        <header class="booking-top">
+          <h2>{{ b.destinationName }}</h2>
+          <span class="status" [ngClass]="statusOf(b)">{{ statusLabel(b) }}</span>
+        </header>
+
+        <p class="dates">
+          {{ b.checkIn | date: 'MMM d, y' }} &rarr; {{ b.checkOut | date: 'MMM d, y' }}
+          &middot; {{ b.nights }} night{{ b.nights === 1 ? '' : 's' }}
+        </p>
+        <p class="reference">Ref. {{ b.id }}</p>
+
+        <div class="amount-row">
+          <span class="amount" [class.refunded]="statusOf(b) === 'cancelled'">
+            {{ b.total | currency: 'PHP' : 'symbol' : '1.0-0' }}
+          </span>
+          <span class="method">{{ statusOf(b) === 'cancelled' ? 'Refunded (prototype)' : 'via ' + b.method }}</span>
+        </div>
+
+        <div class="actions">
+          <ng-container *ngIf="confirmCancelId() !== b.id; else confirmCancel">
+            <button class="small-btn" type="button" (click)="downloadReceipt(b)">
+              <ion-icon name="download-outline"></ion-icon> Receipt
+            </button>
+            <button class="small-btn" type="button" (click)="messageHost(b)">
+              <ion-icon name="chatbubble-ellipses-outline"></ion-icon> Message host
+            </button>
+            <button class="small-btn danger" type="button" *ngIf="canCancel(b)" (click)="cancel(b)">
+              Cancel booking
+            </button>
+          </ng-container>
+          <ng-template #confirmCancel>
+            <span class="confirm-text">Cancel and refund this booking?</span>
+            <button class="small-btn danger solid-danger" type="button" (click)="cancel(b)">Yes, cancel</button>
+            <button class="small-btn" type="button" (click)="confirmCancelId.set(null)">Keep it</button>
+          </ng-template>
+        </div>
+
+        <p class="policy" *ngIf="statusOf(b) === 'upcoming' && !canCancel(b)">
+          Free cancellation closed: it ends 48 hours before check-in.
+        </p>
+      </article>
+    </div>
+
+    <div class="empty" *ngIf="visible().length === 0">
+      <ion-icon name="receipt-outline"></ion-icon>
+      <p>{{ all().length === 0 ? 'No bookings yet.' : 'Nothing here.' }}</p>
+      <p class="hint" *ngIf="all().length === 0">Book a stay from Home and it will show up here.</p>
+    </div>
+
+  </div>
+</ion-content>

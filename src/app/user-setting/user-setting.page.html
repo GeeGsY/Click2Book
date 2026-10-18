@@ -37,7 +37,7 @@
           <span class="row-meta" *ngIf="row.id === 'history'">
             {{ totalSpent | currency: 'PHP' : 'symbol' : '1.0-0' }} spent
           </span>
-          <span class="row-meta" *ngIf="row.meta">{{ row.meta }}</span>
+          <span class="row-meta" *ngIf="meta[row.id]">{{ meta[row.id] }}</span>
           <ion-icon class="row-chevron" name="chevron-forward"></ion-icon>
         </button>
       </div>

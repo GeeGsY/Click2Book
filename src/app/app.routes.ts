@@ -59,8 +59,71 @@ export const routes: Routes = [
       import('./notifications/notifications.page').then((m) => m.NotificationsPage),
   },
   {
+    path: 'edit-profile',
+    canActivate: [authGuard],
+    loadComponent: () => import('./edit-profile/edit-profile.page').then((m) => m.EditProfilePage),
+  },
+  {
+    path: 'change-password',
+    canActivate: [authGuard],
+    loadComponent: () => import('./change-password/change-password.page').then((m) => m.ChangePasswordPage),
+  },
+  {
+    path: 'payment-methods',
+    canActivate: [authGuard],
+    loadComponent: () => import('./payment-methods/payment-methods.page').then((m) => m.PaymentMethodsPage),
+  },
+  {
+    path: 'bookings',
+    canActivate: [authGuard],
+    loadComponent: () => import('./bookings/bookings.page').then((m) => m.BookingsPage),
+  },
+  {
+    path: 'saved',
+    canActivate: [authGuard],
+    loadComponent: () => import('./saved/saved.page').then((m) => m.SavedPage),
+  },
+  {
+    path: 'help',
+    canActivate: [authGuard],
+    loadComponent: () => import('./help/help.page').then((m) => m.HelpPage),
+  },
+  {
+    path: 'privacy',
+    canActivate: [authGuard],
+    loadComponent: () => import('./privacy/privacy.page').then((m) => m.PrivacyPage),
+  },
+  {
     path: 'user-setting',
     canActivate: [authGuard],
     loadComponent: () => import('./user-setting/user-setting.page').then((m) => m.UserSettingPage),
+  },
+  {
+    path: 'edit-profile',
+    loadComponent: () => import('./edit-profile/edit-profile.page').then( m => m.EditProfilePage)
+  },
+  {
+    path: 'change-password',
+    loadComponent: () => import('./change-password/change-password.page').then( m => m.ChangePasswordPage)
+  },
+  {
+    path: 'payment-methods',
+    loadComponent: () => import('./payment-methods/payment-methods.page').then( m => m.PaymentMethodsPage)
+  },
+  {
+    path: 'bookings',
+    loadComponent: () => import('./bookings/bookings.page').then( m => m.BookingsPage)
+  },
+  {
+    path: 'saved',
+    loadComponent: () => import('./saved/saved.page').then( m => m.SavedPage)
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./privacy/privacy.page').then( m => m.PrivacyPage)
+  },
+  {
+    path: 'helps',
+    loadComponent: () => import('./help/help.page').then((m) => m.HelpPage),
   },
 ];

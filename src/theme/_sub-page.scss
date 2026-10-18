@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap');
+
+// Shared look for the pages opened from User Settings (same palette as the rest of the app)
+:host {
+  --ocean: #0e3b43;
+  --teal: #1c6e71;
+  --sand: #f5efe3;
+  --coral: #ff6f59;
+  --ink: #1f2a24;
+  --card-white: #ffffff;
+  display: block;
+}
+
+.sub-content {
+  --background: var(--sand);
+  --padding-start: 22px;
+  --padding-end: 22px;
+  --padding-top: 14px;
+  --padding-bottom: 0;
+  font-family: 'Manrope', sans-serif;
+  color: var(--ink);
+}
+
+.sub-shell {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--card-white);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(14, 59, 67, 0.08);
+    font-size: 22px;
+    color: var(--ocean);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  .link-btn {
+    padding: 8px 4px;
+    border: none;
+    background: transparent;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--teal);
+    cursor: pointer;
+  }
+}
+
+.page-title {
+  margin: 0 0 4px;
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ocean);
+}
+
+.page-subtitle {
+  margin: 0 0 20px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(31, 42, 34, 0.6);
+}
+
+// ---- Cards and forms ----
+.card {
+  background: var(--card-white);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 4px 14px rgba(14, 59, 67, 0.08);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 14px;
+  padding: 9px 14px 10px;
+  border-radius: 14px;
+  background: var(--sand);
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--teal);
+  }
+
+  label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--teal);
+  }
+
+  input {
+    width: 100%;
+    min-height: 24px;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+
+    &::placeholder {
+      color: rgba(31, 42, 34, 0.4);
+      font-weight: 500;
+    }
+
+    &[readonly] {
+      color: rgba(31, 42, 34, 0.55);
+    }
+  }
+
+  .hint {
+    font-size: 11.5px;
+    color: rgba(31, 42, 34, 0.5);
+  }
+}
+
+.notice {
+  margin: 0 4px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #c4412d;
+
+  &.ok {
+    color: var(--teal);
+  }
+}
+
+// ---- Buttons ----
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 15px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):active {
+    opacity: 0.8;
+  }
+}
+
+.primary-btn {
+  border: none;
+  background: var(--ocean);
+  color: #ffffff;
+}
+
+.secondary-btn {
+  border: 1.5px solid var(--ocean);
+  background: transparent;
+  color: var(--ocean);
+}
+
+.danger-btn {
+  border: 1.5px solid #c4412d;
+  background: transparent;
+  color: #c4412d;
+}
+
+.small-btn {
+  padding: 7px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--ocean);
+  background: transparent;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ocean);
+  cursor: pointer;
+
+  &.solid {
+    background: var(--ocean);
+    color: #ffffff;
+  }
+
+  &.danger {
+    border-color: #c4412d;
+    color: #c4412d;
+  }
+
+  &:active {
+    opacity: 0.75;
+  }
+}
+
+.empty {
+  margin-top: 56px;
+  text-align: center;
+  color: rgba(31, 42, 34, 0.55);
+
+  ion-icon {
+    font-size: 46px;
+    color: var(--teal);
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .hint {
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+}
