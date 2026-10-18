@@ -34,8 +34,19 @@
       </div>
     </div>
 
-    <!-- 3. Account / card details (changes with the chosen method) -->
-    <div class="field">
+    <!-- 3a. A saved method is used as it is: nothing to type again -->
+    <div class="field" *ngIf="selectedSaved as saved">
+      <label for="paying-with">Paying with</label>
+      <input
+        id="paying-with"
+        type="text"
+        [value]="saved.label + '  \u2022\u2022\u2022\u2022 ' + saved.last4"
+        readonly
+      />
+    </div>
+
+    <!-- 3b. Account / card details (changes with the chosen method) -->
+    <div class="field" *ngIf="!selectedSaved">
       <label for="account">{{ accountNumberLabel }}</label>
       <input
         id="account"
@@ -67,12 +78,29 @@
 
     <!-- 4. Payment method -->
     <p class="section-label methods-label">Select payment method</p>
+
+    <ng-container *ngIf="savedMethods.length > 0">
+      <div class="saved-row">
+        <button
+          class="saved-btn"
+          type="button"
+          *ngFor="let m of savedMethods"
+          [class.active]="m.id === selectedSavedId"
+          (click)="onSelectSaved(m)"
+        >
+          <span class="saved-name">{{ m.label }}</span>
+          <span class="saved-digits">&bull;&bull;&bull;&bull; {{ m.last4 }}</span>
+        </button>
+      </div>
+      <p class="or-label">Or use a different method</p>
+    </ng-container>
+
     <div class="method-row">
       <button
         class="method-btn"
         type="button"
         *ngFor="let method of paymentMethods"
-        [class.active]="method.id === selectedPaymentMethod"
+        [class.active]="!selectedSavedId && method.id === selectedPaymentMethod"
         (click)="onSelectMethod(method.id)"
       >{{ method.label }}</button>
     </div>

@@ -186,3 +186,60 @@
     }
   }
 }
+
+// ---- Saved payment methods ----
+.saved-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .saved-btn {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 130px;
+    min-height: 54px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+    border: none;
+    border-radius: 12px;
+    background: var(--card-white);
+    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
+    font-family: 'Manrope', sans-serif;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    .saved-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ocean);
+    }
+
+    .saved-digits {
+      font-size: 11.5px;
+      color: rgba(31, 42, 34, 0.55);
+    }
+
+    &.active {
+      background: var(--ocean);
+
+      .saved-name {
+        color: #ffffff;
+      }
+
+      .saved-digits {
+        color: rgba(255, 255, 255, 0.75);
+      }
+    }
+  }
+}
+
+.or-label {
+  margin: 16px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(31, 42, 34, 0.5);
+}

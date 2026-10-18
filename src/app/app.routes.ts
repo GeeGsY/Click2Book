@@ -98,32 +98,4 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./user-setting/user-setting.page').then((m) => m.UserSettingPage),
   },
-  {
-    path: 'edit-profile',
-    loadComponent: () => import('./edit-profile/edit-profile.page').then( m => m.EditProfilePage)
-  },
-  {
-    path: 'change-password',
-    loadComponent: () => import('./change-password/change-password.page').then( m => m.ChangePasswordPage)
-  },
-  {
-    path: 'payment-methods',
-    loadComponent: () => import('./payment-methods/payment-methods.page').then( m => m.PaymentMethodsPage)
-  },
-  {
-    path: 'bookings',
-    loadComponent: () => import('./bookings/bookings.page').then( m => m.BookingsPage)
-  },
-  {
-    path: 'saved',
-    loadComponent: () => import('./saved/saved.page').then( m => m.SavedPage)
-  },
-  {
-    path: 'privacy',
-    loadComponent: () => import('./privacy/privacy.page').then( m => m.PrivacyPage)
-  },
-  {
-    path: 'helps',
-    loadComponent: () => import('./help/help.page').then((m) => m.HelpPage),
-  },
 ];

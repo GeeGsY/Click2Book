@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AppStateService } from '../services/app-state.service';
-import { IonContent, IonIcon, NavController } from '@ionic/angular';
+import { AppStateService, PaymentMethodInfo } from '../services/app-state.service';
+import { IonContent, IonIcon, NavController, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import { arrowBackOutline } from 'ionicons/icons';
 
@@ -19,7 +19,15 @@ interface PaymentMethod {
   standalone: true,
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
-export class PaymentPage implements OnInit {
+export class PaymentPage implements OnInit, ViewWillEnter {
+  // The app runs without zone.js, so changes made from a lifecycle hook must ask for a refresh.
+  private cdr = inject(ChangeDetectorRef);
+
+  // Payment methods saved under Profile > Manage payment methods
+  savedMethods: PaymentMethodInfo[] = [];
+  // Id of the saved method being used, or '' when typing a different one
+  selectedSavedId = '';
+
   // Booking Data (falls back to placeholders if opened without a booking)
   accommodationName: string = 'Your stay';
   // Total in Philippine peso (₱), shown with the PHP currency pipe
@@ -49,11 +57,8 @@ export class PaymentPage implements OnInit {
   ) {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
 
-    // Pre-select the type of the user's default saved payment method.
-    const savedDefault = this.appState.defaultPaymentMethod;
-    if (savedDefault) {
-      this.selectedPaymentMethod = savedDefault.type;
-    }
+    // Start with the user's default saved payment method, if they have one.
+    this.loadSavedMethods();
 
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state as
@@ -78,6 +83,34 @@ export class PaymentPage implements OnInit {
   }
 
   ngOnInit() {}
+
+  ionViewWillEnter(): void {
+    this.loadSavedMethods();
+    this.cdr.markForCheck();
+  }
+
+  get selectedSaved(): PaymentMethodInfo | null {
+    return this.savedMethods.find((m) => m.id === this.selectedSavedId) ?? null;
+  }
+
+  private loadSavedMethods(): void {
+    this.savedMethods = this.appState.paymentMethods;
+    if (this.selectedSaved) return;
+
+    const savedDefault = this.appState.defaultPaymentMethod;
+    this.selectedSavedId = savedDefault?.id ?? '';
+    if (savedDefault) {
+      this.selectedPaymentMethod = savedDefault.type;
+    }
+  }
+
+  // Pay with a saved method: no number to type again (a card still needs its security code).
+  onSelectSaved(method: PaymentMethodInfo): void {
+    this.selectedSavedId = method.id;
+    this.selectedPaymentMethod = method.type;
+    this.accountNumber = '';
+    this.securityCode = '';
+  }
 
   goBack(): void {
     if (window.history.length > 1) {
@@ -106,6 +139,11 @@ export class PaymentPage implements OnInit {
     // Nothing to pay for when the page is opened without a booking.
     if (this.bookingTotal <= 0 || this.nights <= 0) return false;
 
+    // A saved method already has its details; only a card's security code is asked again.
+    if (this.selectedSaved) {
+      return this.selectedSaved.type === 'card' ? this.securityCode.length >= 3 : true;
+    }
+
     const digits = this.accountNumber.replace(/\D/g, '');
     if (this.selectedPaymentMethod === 'card') {
       return digits.length >= 13 && this.securityCode.length >= 3;
@@ -132,8 +170,10 @@ export class PaymentPage implements OnInit {
     input.value = this.securityCode;
   }
 
+  // Typing a different method instead of a saved one.
   onSelectMethod(id: string): void {
-    if (id === this.selectedPaymentMethod) return;
+    if (id === this.selectedPaymentMethod && !this.selectedSavedId) return;
+    this.selectedSavedId = '';
     this.selectedPaymentMethod = id;
     this.onPaymentMethodChange();
   }
@@ -151,22 +191,24 @@ export class PaymentPage implements OnInit {
 
     // TODO: send the payment to a real payment provider. For now the booking is
     // saved in the app so User Settings can show it.
+    const saved = this.selectedSaved;
     const method = this.paymentMethods.find((m) => m.id === this.selectedPaymentMethod);
-    const saved = this.appState.addBooking({
+    const methodLabel = saved ? `${saved.label} ••${saved.last4}` : method?.label ?? this.selectedPaymentMethod;
+    const booking = this.appState.addBooking({
       destinationName: this.accommodationName,
       checkIn: this.checkIn,
       checkOut: this.checkOut,
       nights: this.nights,
       total: this.bookingTotal,
-      method: method?.label ?? this.selectedPaymentMethod,
+      method: methodLabel,
     });
 
-    if (!saved) {
+    if (!booking) {
       this.paying = false;
       return;
     }
 
     // Start a fresh stack at the confirmation screen, so Back cannot return to the payment form.
-    this.nav.navigateRoot('/afterpay', { state: { bookingId: saved.id } });
+    this.nav.navigateRoot('/afterpay', { state: { bookingId: booking.id } });
   }
 }
