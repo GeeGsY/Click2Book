@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -94,8 +95,56 @@ export const routes: Routes = [
     loadComponent: () => import('./privacy/privacy.page').then((m) => m.PrivacyPage),
   },
   {
+    path: 'admin',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin/admin.page').then((m) => m.AdminPage),
+  },
+  {
+    path: 'admin-places',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin-places/admin-places.page').then((m) => m.AdminPlacesPage),
+  },
+  {
+    path: 'admin-place-form',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin-place-form/admin-place-form.page').then((m) => m.AdminPlaceFormPage),
+  },
+  {
+    path: 'admin-bookings',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./admin-bookings/admin-bookings.page').then((m) => m.AdminBookingsPage),
+  },
+  {
     path: 'user-setting',
     canActivate: [authGuard],
     loadComponent: () => import('./user-setting/user-setting.page').then((m) => m.UserSettingPage),
+  },
+  {
+    path: 'edit-profile',
+    loadComponent: () => import('./edit-profile/edit-profile.page').then( m => m.EditProfilePage)
+  },
+  {
+    path: 'change-password',
+    loadComponent: () => import('./change-password/change-password.page').then( m => m.ChangePasswordPage)
+  },
+  {
+    path: 'payment-methods',
+    loadComponent: () => import('./payment-methods/payment-methods.page').then( m => m.PaymentMethodsPage)
+  },
+  {
+    path: 'bookings',
+    loadComponent: () => import('./bookings/bookings.page').then( m => m.BookingsPage)
+  },
+  {
+    path: 'saved',
+    loadComponent: () => import('./saved/saved.page').then( m => m.SavedPage)
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./privacy/privacy.page').then( m => m.PrivacyPage)
+  },
+  {
+    path: 'helps',
+    loadComponent: () => import('./help/help.page').then((m) => m.HelpPage),
   },
 ];

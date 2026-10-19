@@ -1,0 +1,76 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+      <button class="link-btn" type="button" (click)="add()">
+        <ion-icon name="add-outline"></ion-icon> Add place
+      </button>
+    </div>
+
+    <h1 class="page-title">Places</h1>
+    <p class="page-subtitle">{{ total }} place{{ total === 1 ? '' : 's' }}. Hidden places are not shown to users.</p>
+
+    <div class="search card-lite">
+      <input type="text" placeholder="Search by name, location or provider" aria-label="Search places" [(ngModel)]="query" />
+    </div>
+
+    <div class="list" *ngIf="filtered.length > 0">
+      <article class="place" *ngFor="let place of filtered; trackBy: trackById" [class.is-hidden]="place.hidden">
+        <div class="place-top">
+          <span class="photo" [style.background-image]="'url(' + place.image + ')'" aria-hidden="true"></span>
+          <div class="info">
+            <h2>{{ place.name }}</h2>
+            <p class="where">{{ place.country }}</p>
+            <p class="meta">
+              <span class="type">{{ typeLabel(place) }}</span>
+              <span class="price">{{ place.price | currency: 'PHP' : 'symbol' : '1.0-0' }}<small> / night</small></span>
+            </p>
+            <p class="flags">
+              <span class="flag featured" *ngIf="place.featured">Featured</span>
+              <span class="flag" *ngIf="place.popular">Popular</span>
+              <span class="flag hidden-flag" *ngIf="place.hidden">Hidden</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="actions">
+          <ng-container *ngIf="confirmDeleteId() !== place.id; else confirmDelete">
+            <button class="small-btn" type="button" (click)="edit(place)">Edit</button>
+            <button class="small-btn" type="button" (click)="toggleHidden(place)">
+              <ion-icon [name]="place.hidden ? 'eye-outline' : 'eye-off-outline'"></ion-icon>
+              {{ place.hidden ? 'Show' : 'Hide' }}
+            </button>
+            <button class="small-btn" type="button" *ngIf="!place.hidden && !place.featured" (click)="feature(place)">
+              <ion-icon name="star-outline"></ion-icon> Feature
+            </button>
+            <button class="small-btn danger" type="button" (click)="remove(place)">Delete</button>
+          </ng-container>
+          <ng-template #confirmDelete>
+            <span class="confirm-text">Delete this place?</span>
+            <button class="small-btn danger solid-danger" type="button" (click)="remove(place)">Yes, delete</button>
+            <button class="small-btn" type="button" (click)="confirmDeleteId.set(null)">Keep</button>
+          </ng-template>
+        </div>
+      </article>
+    </div>
+
+    <div class="empty" *ngIf="filtered.length === 0">
+      <p>{{ total === 0 ? 'No places yet.' : 'No places match your search.' }}</p>
+      <p class="hint" *ngIf="total === 0">Tap "Add place" to create one, or bring back the sample places below.</p>
+    </div>
+
+    <div class="reset">
+      <p class="confirm-text" *ngIf="confirmReset()">
+        This replaces every place with the sample list. Places you added or edited will be lost.
+      </p>
+      <button class="secondary-btn" type="button" (click)="reset()">
+        {{ confirmReset() ? 'Yes, reset to sample places' : 'Reset to sample places' }}
+      </button>
+      <button class="link-btn" type="button" *ngIf="confirmReset()" (click)="confirmReset.set(false)">Keep my places</button>
+    </div>
+
+  </div>
+</ion-content>

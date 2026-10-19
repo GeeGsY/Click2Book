@@ -1,0 +1,58 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <span class="admin-badge">Admin</span>
+      <button class="link-btn" type="button" (click)="logout()">
+        <ion-icon name="log-out-outline"></ion-icon> Log out
+      </button>
+    </div>
+
+    <h1 class="page-title">Admin dashboard</h1>
+    <p class="page-subtitle">Signed in as {{ email }}</p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value">{{ visiblePlaces }}<small> / {{ totalPlaces }}</small></span>
+        <span class="stat-label">Places shown</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ stats.bookings }}</span>
+        <span class="stat-label">Bookings</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">{{ stats.guests }}</span>
+        <span class="stat-label">Guests</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value money">{{ stats.revenue | currency: 'PHP' : 'symbol' : '1.0-0' }}</span>
+        <span class="stat-label">Revenue</span>
+      </div>
+    </div>
+
+    <p class="breakdown">
+      {{ stats.upcoming }} upcoming &middot; {{ stats.completed }} completed &middot; {{ stats.cancelled }} cancelled
+    </p>
+
+    <button class="nav-card" type="button" (click)="go('/admin-places')">
+      <span class="nav-icon" aria-hidden="true"><ion-icon name="business-outline"></ion-icon></span>
+      <span class="nav-text">
+        <strong>Manage places</strong>
+        <span>Add, edit, hide or remove places and set their prices</span>
+      </span>
+      <ion-icon class="chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
+    </button>
+
+    <button class="nav-card" type="button" (click)="go('/admin-bookings')">
+      <span class="nav-icon" aria-hidden="true"><ion-icon name="receipt-outline"></ion-icon></span>
+      <span class="nav-text">
+        <strong>All bookings</strong>
+        <span>See every booking and mark stays as completed</span>
+      </span>
+      <ion-icon class="chevron" name="chevron-forward" aria-hidden="true"></ion-icon>
+    </button>
+
+    <p class="note">Prototype: everything is saved in this browser only, so it is not shared between devices.</p>
+
+  </div>
+</ion-content>

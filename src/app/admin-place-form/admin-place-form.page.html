@@ -1,0 +1,114 @@
+<ion-content class="sub-content" [fullscreen]="true">
+  <div class="sub-shell">
+
+    <div class="top-bar">
+      <button class="icon-btn" type="button" (click)="goBack()" aria-label="Back">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </button>
+    </div>
+
+    <h1 class="page-title">{{ isEditing ? 'Edit place' : 'Add a place' }}</h1>
+    <p class="page-subtitle">Users will see this on Home and the details page.</p>
+
+    <form class="card" (ngSubmit)="save()" novalidate>
+
+      <!-- Type -->
+      <p class="group-label">Type</p>
+      <div class="chips" role="radiogroup" aria-label="Type of place">
+        <button
+          type="button"
+          class="chip"
+          role="radio"
+          *ngFor="let t of types"
+          [class.active]="type() === t.id"
+          [attr.aria-checked]="type() === t.id"
+          (click)="type.set(t.id)"
+        >{{ t.label }}</button>
+      </div>
+
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" maxlength="60" placeholder="Orquidia Beach Resort" [(ngModel)]="name" />
+      </div>
+
+      <div class="field">
+        <label for="country">Location</label>
+        <input id="country" name="country" type="text" maxlength="60" placeholder="Santa Ana, Cagayan" [(ngModel)]="country" />
+      </div>
+
+      <div class="field">
+        <label for="price">Price per night (₱)</label>
+        <input id="price" name="price" type="number" inputmode="numeric" min="100" step="50" placeholder="2500" [(ngModel)]="price" />
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4" maxlength="600"
+          placeholder="Rooms, facilities, what is nearby..." [(ngModel)]="description"></textarea>
+        <span class="hint">Check-in and cancellation details are added for you.</span>
+      </div>
+
+      <!-- Photo -->
+      <p class="group-label">Photo</p>
+      <div class="photo-box">
+        <div class="preview" [style.background-image]="image() ? 'url(' + image() + ')' : null">
+          <ion-icon name="image-outline" *ngIf="!image()" aria-hidden="true"></ion-icon>
+        </div>
+        <label class="upload-btn">
+          {{ busy() ? 'Reading photo...' : 'Choose a photo' }}
+          <input type="file" accept="image/*" hidden (change)="onFile($event)" />
+        </label>
+      </div>
+      <div class="field">
+        <label for="imageUrl">Or paste an image link</label>
+        <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." [(ngModel)]="imageUrl" (ngModelChange)="onImageUrlChange()" />
+      </div>
+
+      <!-- Tags -->
+      <p class="group-label">Nearby or special</p>
+      <div class="chips">
+        <button
+          type="button"
+          class="chip"
+          *ngFor="let t of tagOptions"
+          [class.active]="tags().includes(t.id)"
+          [attr.aria-pressed]="tags().includes(t.id)"
+          (click)="toggleTag(t.id)"
+        >{{ t.label }}</button>
+      </div>
+
+      <div class="field">
+        <label for="provider">Provider or owner (optional)</label>
+        <input id="provider" name="provider" type="text" maxlength="60" placeholder="Owner or business name" [(ngModel)]="provider" />
+      </div>
+
+      <div class="two">
+        <div class="field">
+          <label for="rating">Sample rating (0-5)</label>
+          <input id="rating" name="rating" type="number" min="0" max="5" step="0.1" [(ngModel)]="rating" />
+        </div>
+        <div class="field">
+          <label for="reviews">Sample reviews</label>
+          <input id="reviews" name="reviews" type="number" min="0" step="1" [(ngModel)]="reviewCount" />
+        </div>
+      </div>
+
+      <label class="switch">
+        <input type="checkbox" name="popular" [(ngModel)]="popular" />
+        <span>Show under "Popular this week"</span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" name="visible" [(ngModel)]="visible" />
+        <span>Visible to users</span>
+      </label>
+
+      <p class="notice" *ngIf="message()" role="alert">{{ message() }}</p>
+
+      <div class="form-actions">
+        <button class="secondary-btn" type="button" (click)="goBack()">Cancel</button>
+        <button class="primary-btn" type="submit" [disabled]="busy()">{{ isEditing ? 'Save changes' : 'Add place' }}</button>
+      </div>
+    </form>
+
+  </div>
+</ion-content>

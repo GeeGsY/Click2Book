@@ -44,7 +44,7 @@ export class LoginPage {
 
     if (result.ok) {
       this.password = '';
-      this.router.navigate(['/home'], { replaceUrl: true });
+      this.router.navigate([this.state.isAdmin ? '/admin' : '/home'], { replaceUrl: true });
     } else {
       this.message = result.error ?? 'Could not log in. Please try again.';
       this.cdr.markForCheck();

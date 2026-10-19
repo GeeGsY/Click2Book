@@ -15,7 +15,7 @@ export interface Booking {
   total: number; // Philippine peso (₱)
   method: string;
   createdAt: string;
-  status?: 'confirmed' | 'cancelled';
+  status?: 'confirmed' | 'cancelled' | 'completed';
   cancelledAt?: string;
 }
 
@@ -73,8 +73,27 @@ export interface AuthResult {
   error?: string;
 }
 
+export type UserRole = 'user' | 'admin';
+
 interface Account extends UserProfile {
   passwordHash: string;
+  role?: UserRole; // accounts without a role are normal users
+}
+
+// A booking together with the guest who made it, for the admin screens.
+export interface AdminBooking {
+  booking: Booking;
+  guestName: string;
+  guestEmail: string;
+}
+
+export interface AdminStats {
+  guests: number;
+  bookings: number;
+  upcoming: number;
+  completed: number;
+  cancelled: number;
+  revenue: number; // cancelled bookings are refunded, so they are not counted
 }
 
 interface UserData {
@@ -96,6 +115,11 @@ interface StoredState {
 
 const STORAGE_KEY = 'click2book.state.v1';
 const SESSION_KEY = 'click2book.session.v1';
+
+// Demo admin account, created the first time the app opens. These details are in the
+// source code on purpose for the school demo; a real app would never ship a password.
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_PASSWORD = 'admin101';
 
 // Sample conversations every account starts with, so the inbox is not empty.
 // Remove this list (and the starter code that uses it) once real hosts exist.
@@ -144,6 +168,9 @@ export class AppStateService {
   // Bumped on every change so screens that read the getters below refresh by themselves
   // (the app runs without zone.js).
   private revision = signal(0);
+
+  // Resolves once the demo admin account exists (its password is hashed, which takes a moment).
+  private ready: Promise<void> = this.seedAdmin();
 
   // ---------- Session ----------
 
@@ -198,11 +225,17 @@ export class AppStateService {
     this.save();
   }
 
+  get isAdmin(): boolean {
+    this.revision();
+    return this.currentAccount()?.role === 'admin';
+  }
+
   get isLoggedIn(): boolean {
     return this.currentAccount() !== null;
   }
 
   async register(name: string, email: string, password: string): Promise<AuthResult> {
+    await this.ready;
     const cleanName = name.trim();
     const cleanEmail = this.normalizeEmail(email);
 
@@ -226,6 +259,7 @@ export class AppStateService {
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
+    await this.ready;
     const cleanEmail = this.normalizeEmail(email);
     if (!cleanEmail || !password) {
       return { ok: false, error: 'Please enter your email and password.' };
@@ -281,6 +315,7 @@ export class AppStateService {
 
   statusOf(booking: Booking): BookingStatus {
     if (booking.status === 'cancelled') return 'cancelled';
+    if (booking.status === 'completed') return 'completed';
     return booking.checkOut < this.todayIso() ? 'completed' : 'upcoming';
   }
 
@@ -324,6 +359,61 @@ export class AppStateService {
     return this.bookings
       .filter((b) => b.status !== 'cancelled')
       .reduce((sum, b) => sum + b.total, 0);
+  }
+
+  // ---------- Admin ----------
+
+  // Every booking made by every guest, newest first.
+  get allBookings(): AdminBooking[] {
+    this.revision();
+    if (!this.isAdmin) return [];
+
+    const list: AdminBooking[] = [];
+    for (const account of this.state.accounts.filter((a) => a.role !== 'admin')) {
+      for (const booking of this.state.data[account.email]?.bookings ?? []) {
+        list.push({ booking, guestName: account.name, guestEmail: account.email });
+      }
+    }
+    return list.sort((a, b) => b.booking.createdAt.localeCompare(a.booking.createdAt));
+  }
+
+  get adminStats(): AdminStats {
+    const all = this.allBookings;
+    const count = (status: BookingStatus) => all.filter((x) => this.statusOf(x.booking) === status).length;
+    return {
+      guests: this.state.accounts.filter((a) => a.role !== 'admin').length,
+      bookings: all.length,
+      upcoming: count('upcoming'),
+      completed: count('completed'),
+      cancelled: count('cancelled'),
+      revenue: all.filter((x) => x.booking.status !== 'cancelled').reduce((sum, x) => sum + x.booking.total, 0),
+    };
+  }
+
+  // The admin marks a stay as finished, or cancels it. The guest gets a notification.
+  adminUpdateBooking(guestEmail: string, bookingId: string, status: 'completed' | 'cancelled'): AuthResult {
+    if (!this.isAdmin) return { ok: false, error: 'Only an admin can do this.' };
+
+    const data = this.state.data[guestEmail];
+    const booking = data?.bookings.find((b) => b.id === bookingId);
+    if (!data || !booking) return { ok: false, error: 'Booking not found.' };
+    if (this.statusOf(booking) === 'cancelled') return { ok: false, error: 'This booking is already cancelled.' };
+    if (status === 'completed' && booking.status === 'completed') return { ok: false, error: 'This stay is already completed.' };
+
+    booking.status = status;
+    if (status === 'cancelled') {
+      booking.cancelledAt = new Date().toISOString();
+    }
+    this.pushNotification(data, {
+      type: 'booking',
+      title: status === 'completed' ? 'Stay completed' : 'Booking cancelled',
+      text:
+        status === 'completed'
+          ? `${booking.destinationName} · thanks for staying with us!`
+          : `${booking.destinationName} was cancelled by the host · ${peso.format(booking.total)} will be refunded (prototype)`,
+    });
+    this.save();
+    return { ok: true };
   }
 
   // ---------- Messages ----------
@@ -432,6 +522,7 @@ export class AppStateService {
 
   // Adds the welcome notification and the sample conversations once per account.
   ensureStarterData(): void {
+    if (this.isAdmin) return;
     const data = this.currentData();
     if (!data || data.starterAdded) return;
 
@@ -568,6 +659,18 @@ export class AppStateService {
   }
 
   // ---------- Internals ----------
+
+  private async seedAdmin(): Promise<void> {
+    if (this.state.accounts.some((a) => a.email === ADMIN_EMAIL)) return;
+
+    this.state.accounts.push({
+      name: 'Admin',
+      email: ADMIN_EMAIL,
+      passwordHash: await this.hash(ADMIN_EMAIL, ADMIN_PASSWORD),
+      role: 'admin',
+    });
+    this.save();
+  }
 
   private pushNotification(
     data: UserData,

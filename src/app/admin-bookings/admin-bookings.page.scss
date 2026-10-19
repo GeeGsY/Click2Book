@@ -1,0 +1,149 @@
+@use '../../theme/sub-page';
+
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 18px;
+    background: var(--card-white);
+    color: var(--ocean);
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(14, 59, 67, 0.06);
+    cursor: pointer;
+
+    .count {
+      margin-left: 3px;
+      opacity: 0.55;
+      font-weight: 600;
+    }
+
+    &.active {
+      background: var(--ocean);
+      color: #ffffff;
+    }
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.booking {
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--card-white);
+  box-shadow: 0 4px 14px rgba(14, 59, 67, 0.08);
+
+  .booking-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+
+    h2 {
+      margin: 0;
+      font-family: 'Fraunces', serif;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--ocean);
+    }
+  }
+
+  .status {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+
+    &.upcoming {
+      background: rgba(255, 111, 89, 0.15);
+      color: #c4412d;
+    }
+
+    &.completed {
+      background: rgba(28, 110, 113, 0.14);
+      color: var(--teal);
+    }
+
+    &.cancelled {
+      background: rgba(31, 42, 34, 0.1);
+      color: rgba(31, 42, 34, 0.6);
+    }
+  }
+
+  .guest {
+    margin: 6px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  .dates {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: rgba(31, 42, 34, 0.75);
+  }
+
+  .reference {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+    color: rgba(31, 42, 34, 0.45);
+  }
+
+  .amount-row {
+    margin: 10px 0;
+
+    .amount {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--coral);
+
+      &.refunded {
+        color: rgba(31, 42, 34, 0.4);
+        text-decoration: line-through;
+      }
+    }
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .confirm-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #c4412d;
+
+    &.ok {
+      color: var(--teal);
+    }
+  }
+
+  .solid-danger {
+    background: #c4412d;
+    color: #ffffff;
+  }
+}
