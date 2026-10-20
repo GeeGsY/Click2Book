@@ -1,3 +1,5 @@
+import { SupabaseService } from './supabase.service';
+import type { Click2BookProfile } from './supabase.service';
 import { Injectable, signal } from '@angular/core';
 
 export interface UserProfile {
@@ -158,6 +160,9 @@ const peso = new Intl.NumberFormat('en-PH', {
  */
 @Injectable({ providedIn: 'root' })
 export class AppStateService {
+  constructor(
+  private supabaseService: SupabaseService,
+) {}
   private state: StoredState = this.load();
 
   // Who is logged in. Kept per visit (sessionStorage) instead of forever, so closing
@@ -170,7 +175,41 @@ export class AppStateService {
   private revision = signal(0);
 
   // Resolves once the demo admin account exists (its password is hashed, which takes a moment).
-  private ready: Promise<void> = this.seedAdmin();
+  private ready: Promise<void> = Promise.resolve();
+
+  attachSupabaseUser(profile: Click2BookProfile): void {
+  const email = profile.email.trim().toLowerCase();
+
+  let account = this.state.accounts.find(
+    (item) => item.email === email,
+  );
+
+  if (!account) {
+    account = {
+      name: profile.full_name || email.split('@')[0],
+      email,
+      phone: profile.phone ?? '',
+      passwordHash: '',
+      role: profile.role,
+    };
+
+    this.state.accounts.push(account);
+  } else {
+    account.name = profile.full_name || account.name;
+    account.phone = profile.phone ?? '';
+    account.role = profile.role;
+  }
+
+  if (!this.state.data[email]) {
+    this.state.data[email] = {
+      bookings: [],
+      favorites: [],
+    };
+  }
+
+  this.setSession(email);
+  this.save();
+}
 
   // ---------- Session ----------
 
@@ -275,10 +314,13 @@ export class AppStateService {
     return { ok: true };
   }
 
-  logout(): void {
+ async logout(): Promise<void> {
+  try {
+    await this.supabaseService.signOut();
+  } finally {
     this.setSession(null);
   }
-
+}
   // ---------- Bookings ----------
 
   get bookings(): Booking[] {

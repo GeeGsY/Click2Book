@@ -1,11 +1,18 @@
+
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { location, eyeOutline, eyeOffOutline } from 'ionicons/icons';
+import {
+  location,
+  eyeOutline,
+  eyeOffOutline,
+} from 'ionicons/icons';
+
 import { AppStateService } from '../services/app-state.service';
+import { SupabaseService } from '../services/supabase.service';
 
 @Component({
   selector: 'app-login',
@@ -15,8 +22,6 @@ import { AppStateService } from '../services/app-state.service';
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
 export class LoginPage {
-  // The app runs without zone.js, so changes made after an await or from a
-  // lifecycle hook must ask Angular to refresh the view.
   private cdr = inject(ChangeDetectorRef);
 
   email = '';
@@ -25,38 +30,77 @@ export class LoginPage {
   message = '';
   busy = false;
 
-  constructor(private state: AppStateService, private router: Router) {
+  constructor(
+    private state: AppStateService,
+    private supabase: SupabaseService,
+    private router: Router,
+  ) {
     addIcons({
-      location: location,
+      location,
       'eye-outline': eyeOutline,
       'eye-off-outline': eyeOffOutline,
     });
   }
 
-  async onLogin() {
+  async onLogin(): Promise<void> {
     if (this.busy) return;
+
     this.message = '';
+
+    if (!this.email.trim() || !this.password) {
+      this.message = 'Please enter your email and password.';
+      return;
+    }
+
     this.busy = true;
 
-    const result = await this.state.login(this.email, this.password);
-    this.busy = false;
-    this.cdr.markForCheck();
+    try {
+      const result = await this.supabase.signIn(
+        this.email,
+        this.password,
+      );
 
-    if (result.ok) {
+      this.state.attachSupabaseUser(result.profile);
       this.password = '';
-      this.router.navigate([this.state.isAdmin ? '/admin' : '/home'], { replaceUrl: true });
-    } else {
-      this.message = result.error ?? 'Could not log in. Please try again.';
+
+      await this.router.navigate(
+        [result.profile.role === 'admin' ? '/admin' : '/home'],
+        { replaceUrl: true },
+      );
+    } catch (error: unknown) {
+      this.message =
+        error instanceof Error
+          ? error.message
+          : 'Could not log in. Please try again.';
+    } finally {
+      this.busy = false;
       this.cdr.markForCheck();
     }
   }
 
-  onForgotPassword() {
-    // TODO: password recovery needs a server to send the reset link
-    this.message = 'Password recovery is not available in this prototype yet.';
+  async onForgotPassword(): Promise<void> {
+    if (!this.email.trim()) {
+      this.message = 'Enter your email address first.';
+      return;
+    }
+
+    this.busy = true;
+    this.message = '';
+
+    try {
+      await this.supabase.resetPassword(this.email);
+      this.message =
+        'If your account exists, check your email for password recovery instructions.';
+    } catch {
+      this.message =
+        'Could not request password recovery. Please try again.';
+    } finally {
+      this.busy = false;
+      this.cdr.markForCheck();
+    }
   }
 
-  onSignUp() {
+  onSignUp(): void {
     this.router.navigate(['/register']);
   }
 }

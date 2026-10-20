@@ -1,11 +1,18 @@
+
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { location, eyeOutline, eyeOffOutline } from 'ionicons/icons';
+import {
+  location,
+  eyeOutline,
+  eyeOffOutline,
+} from 'ionicons/icons';
+
 import { AppStateService } from '../services/app-state.service';
+import { SupabaseService } from '../services/supabase.service';
 
 @Component({
   selector: 'app-register',
@@ -15,8 +22,6 @@ import { AppStateService } from '../services/app-state.service';
   imports: [CommonModule, FormsModule, IonContent, IonIcon],
 })
 export class RegisterPage {
-  // The app runs without zone.js, so changes made after an await or from a
-  // lifecycle hook must ask Angular to refresh the view.
   private cdr = inject(ChangeDetectorRef);
 
   name = '';
@@ -26,34 +31,77 @@ export class RegisterPage {
   message = '';
   busy = false;
 
-  constructor(private state: AppStateService, private router: Router) {
+  constructor(
+    private state: AppStateService,
+    private supabase: SupabaseService,
+    private router: Router,
+  ) {
     addIcons({
-      location: location,
+      location,
       'eye-outline': eyeOutline,
       'eye-off-outline': eyeOffOutline,
     });
   }
 
-  async onSignUp() {
+  async onSignUp(): Promise<void> {
     if (this.busy) return;
+
     this.message = '';
+
+    if (this.name.trim().length < 2) {
+      this.message = 'Please enter your name.';
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email.trim())) {
+      this.message = 'Please enter a valid email address.';
+      return;
+    }
+
+    if (this.password.length < 6) {
+      this.message = 'Password must be at least 6 characters.';
+      return;
+    }
+
     this.busy = true;
 
-    const result = await this.state.register(this.name, this.email, this.password);
-    this.busy = false;
-    this.cdr.markForCheck();
+    try {
+      const result = await this.supabase.signUp(
+        this.name,
+        this.email,
+        this.password,
+      );
 
-    if (result.ok) {
       this.password = '';
-      // A new account is signed in straight away and goes to the home screen.
-      this.router.navigate(['/home'], { replaceUrl: true });
-    } else {
-      this.message = result.error ?? 'Could not create the account. Please try again.';
+
+      if (result.session && result.user) {
+        const profile = await this.supabase.getProfile(
+          result.user.id,
+        );
+
+        this.state.attachSupabaseUser(profile);
+
+        await this.router.navigate(['/home'], {
+          replaceUrl: true,
+        });
+      } else {
+        this.message =
+          'Account created. Check your email to confirm your account, then log in.';
+
+        this.cdr.markForCheck();
+      }
+    } catch (error: unknown) {
+      this.message =
+        error instanceof Error
+          ? error.message
+          : 'Could not create the account. Please try again.';
+    } finally {
+      this.busy = false;
       this.cdr.markForCheck();
     }
   }
 
-  onLogin() {
+  onLogin(): void {
     this.router.navigate(['/login']);
   }
 }
