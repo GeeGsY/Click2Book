@@ -67,8 +67,8 @@ export class NotificationsPage implements ViewWillEnter {
   }
 
   open(item: AppNotification): void {
-    this.appState.markNotificationRead(item.id);
-    this.refresh();
+    void this.appState.markNotificationRead(item.id);
+    this.items.set(this.appState.notifications);
 
     // A message notification opens that conversation.
     if (item.type === 'message' && item.thread) {
@@ -77,8 +77,8 @@ export class NotificationsPage implements ViewWillEnter {
   }
 
   markAllRead(): void {
-    this.appState.markAllNotificationsRead();
-    this.refresh();
+    void this.appState.markAllNotificationsRead();
+    this.items.set(this.appState.notifications);
   }
 
   goBack(): void {

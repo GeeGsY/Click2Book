@@ -237,6 +237,11 @@ export class AppStateService {
   private remotePaymentMethods: PaymentMethodInfo[] = [];
   private starterChecked = false;
 
+  // Notifications the guest already read on this device. They stay "read" even if a list that
+  // was loaded before Supabase finished saving the change arrives late.
+  private locallyRead = new Set<string>();
+  private notificationLoads = 0;
+
   // Who is logged in. Kept per visit (sessionStorage) instead of forever, so closing
   // and reopening the app always starts at the Login page. Accounts, bookings and
   // saved destinations stay saved in localStorage.
@@ -717,9 +722,13 @@ export class AppStateService {
     // Update the screen straight away, then tell Supabase.
     const state = this.remoteThreads[thread];
     this.remoteThreads[thread] = { image: state?.image, lastRead: new Date().toISOString() };
-    this.remoteNotifications = this.remoteNotifications.map((n) =>
-      n.type === 'message' && n.thread === thread ? { ...n, read: true } : n,
-    );
+    this.remoteNotifications = this.remoteNotifications.map((n) => {
+      if (n.type === 'message' && n.thread === thread) {
+        this.locallyRead.add(n.id);
+        return { ...n, read: true };
+      }
+      return n;
+    });
     this.revision.update((v) => v + 1);
     void this.supabaseService.supabase.rpc('mark_thread_read', { p_thread: thread });
   }
@@ -744,12 +753,16 @@ export class AppStateService {
       return;
     }
 
+    const load = ++this.notificationLoads;
     const { data, error } = await this.supabaseService.supabase
       .from('notifications')
       .select('id, type, title, body, thread, read, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(100);
+
+    // If a newer load started while this one was running, ignore this (older) answer.
+    if (load !== this.notificationLoads) return;
 
     if (!error) {
       this.remoteNotifications = (data as NotificationRow[]).map((row) => ({
@@ -758,28 +771,43 @@ export class AppStateService {
         title: row.title,
         text: row.body,
         createdAt: row.created_at,
-        read: row.read,
+        read: row.read || this.locallyRead.has(row.id),
         thread: row.thread ?? undefined,
       }));
       this.revision.update((v) => v + 1);
     }
   }
 
-  markNotificationRead(id: string): void {
+  async markNotificationRead(id: string): Promise<void> {
     const note = this.remoteNotifications.find((n) => n.id === id);
     if (!note || note.read) return;
 
+    // Show it as read straight away and remember it, then save it in Supabase.
+    this.locallyRead.add(id);
     this.remoteNotifications = this.remoteNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
     this.revision.update((v) => v + 1);
-    void this.supabaseService.supabase.from('notifications').update({ read: true }).eq('id', id);
+
+    const { error } = await this.supabaseService.supabase.from('notifications').update({ read: true }).eq('id', id);
+    if (error) {
+      // Not saved: forget it, so the list shows what Supabase really has.
+      this.locallyRead.delete(id);
+      await this.refreshNotifications();
+    }
   }
 
-  markAllNotificationsRead(): void {
-    if (!this.remoteNotifications.some((n) => !n.read)) return;
+  async markAllNotificationsRead(): Promise<void> {
+    const unread = this.remoteNotifications.filter((n) => !n.read).map((n) => n.id);
+    if (unread.length === 0) return;
 
+    unread.forEach((id) => this.locallyRead.add(id));
     this.remoteNotifications = this.remoteNotifications.map((n) => ({ ...n, read: true }));
     this.revision.update((v) => v + 1);
-    void this.supabaseService.supabase.from('notifications').update({ read: true }).eq('read', false);
+
+    const { error } = await this.supabaseService.supabase.from('notifications').update({ read: true }).in('id', unread);
+    if (error) {
+      unread.forEach((id) => this.locallyRead.delete(id));
+      await this.refreshNotifications();
+    }
   }
 
   // Asks the database to add the welcome notification and the sample conversations (once per guest).
@@ -1079,6 +1107,7 @@ export class AppStateService {
       this.remoteFavorites = [];
       this.remotePaymentMethods = [];
       this.starterChecked = false;
+      this.locallyRead.clear();
     }
     try {
       if (email) {
