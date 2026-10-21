@@ -13,6 +13,8 @@
     <h1 class="page-title">Places</h1>
     <p class="page-subtitle">{{ total }} place{{ total === 1 ? '' : 's' }}. Hidden places are not shown to users.</p>
 
+    <p class="confirm-text" *ngIf="message()" role="alert">{{ message() }}</p>
+
     <div class="search card-lite">
       <input type="text" placeholder="Search by name, location or provider" aria-label="Search places" [(ngModel)]="query" />
     </div>

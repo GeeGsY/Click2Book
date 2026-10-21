@@ -93,7 +93,8 @@ export class AdminPlaceFormPage implements ViewWillEnter {
     }
   }
 
-  save(): void {
+  async save(): Promise<void> {
+    if (this.busy()) return;
     const input: PlaceInput = {
       name: this.name,
       type: this.type(),
@@ -109,7 +110,10 @@ export class AdminPlaceFormPage implements ViewWillEnter {
       hidden: !this.visible,
     };
 
-    const result = this.placesService.savePlace(input, this.placeId);
+    this.busy.set(true);
+    this.message.set('');
+    const result = await this.placesService.savePlace(input, this.placeId);
+    this.busy.set(false);
     if (result.ok) {
       this.goBack();
     } else {

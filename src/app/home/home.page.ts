@@ -329,6 +329,9 @@ export class HomePage implements ViewWillEnter {
 
   // Places saved before copies were kept get their copy the next time Home is shown.
   ionViewWillEnter(): void {
+    // Pick up places the admin added or changed since this screen was last open.
+    void this.places.refresh();
+
     for (const dest of this.destinations) {
       if (this.state.isFavorite(dest.id)) {
         this.state.rememberFavorite(dest.id, this.snapshot(dest));

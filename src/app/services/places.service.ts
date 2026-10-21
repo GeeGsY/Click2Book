@@ -1,6 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Place, PlaceType, STAY_POLICY, TYPE_CATEGORY } from '../data/place.model';
 import { SEED_PLACES } from '../data/place-seed';
+import { SupabaseService } from './supabase.service';
 
 export interface PlaceInput {
   name: string;
@@ -23,38 +24,110 @@ export interface PlaceResult {
   place?: Place;
 }
 
-interface PlaceStore {
-  places: Place[];
-  nextId: number; // ids are never reused, so saved places and bookings keep pointing at the right place
+// How a row looks in the Supabase "places" table (see places.sql).
+interface PlaceRow {
+  id: number;
+  name: string;
+  type: PlaceType;
+  location: string;
+  price: number;
+  rating: number;
+  review_count: number;
+  image: string;
+  categories: string[] | null;
+  popular: boolean;
+  description: string;
+  provider: string | null;
+  hidden: boolean;
+  featured: boolean;
+  gallery: string[] | null;
 }
 
-const STORAGE_KEY = 'click2book.places.v1';
+function fromRow(row: PlaceRow): Place {
+  return {
+    id: Number(row.id),
+    name: row.name,
+    type: row.type,
+    country: row.location,
+    price: row.price,
+    rating: Number(row.rating),
+    reviewCount: row.review_count,
+    image: row.image,
+    categories: row.categories ?? [],
+    popular: row.popular,
+    description: row.description,
+    provider: row.provider ?? undefined,
+    hidden: row.hidden,
+    featured: row.featured,
+    gallery: row.gallery ?? undefined,
+  };
+}
+
+function toRow(place: Place): Omit<PlaceRow, 'id'> & { id: number } {
+  return {
+    id: place.id,
+    name: place.name,
+    type: place.type,
+    location: place.country,
+    price: place.price,
+    rating: place.rating,
+    review_count: place.reviewCount,
+    image: place.image,
+    categories: place.categories,
+    popular: place.popular,
+    description: place.description,
+    provider: place.provider ?? null,
+    hidden: !!place.hidden,
+    featured: !!place.featured,
+    gallery: place.gallery ?? null,
+  };
+}
 
 /**
  * The list of places everyone sees. Admins change it; Home reads it.
- * It is saved in the browser's localStorage because the prototype has no server yet,
- * so a place added on one device does not appear on another.
+ * The places live in the Supabase "places" table, so a place added by the admin on one
+ * device shows up for every user. Row Level Security makes sure only admins can change it.
+ *
+ * Screens still read the getters below (they stay synchronous); the list is loaded from
+ * Supabase in the background and the signal makes the screens refresh when it arrives.
  */
 @Injectable({ providedIn: 'root' })
 export class PlacesService {
-  private store: PlaceStore = this.load();
+  private supabase = inject(SupabaseService);
+
+  private list: Place[] = [];
 
   // Bumped on every change so screens that read the getters below refresh by themselves
   // (the app runs without zone.js).
   private revision = signal(0);
 
+  // True until the first load from Supabase finishes.
+  readonly loading = signal(true);
+  // Set when the places could not be loaded (offline, table missing...).
+  readonly loadError = signal('');
+
+  private loadedOnce = false;
+
+  constructor() {
+    void this.refresh();
+    // Logging in or out changes what the database lets us read (admins also see hidden places).
+    this.supabase.supabase.auth.onAuthStateChange(() => {
+      setTimeout(() => void this.refresh(), 0);
+    });
+  }
+
   // ---------- Reading ----------
 
-  // Every place, including hidden ones (for the admin screens).
+  // Every place the database gives us, including hidden ones for admins (for the admin screens).
   get places(): Place[] {
     this.revision();
-    return this.store.places;
+    return this.list;
   }
 
   // What users see.
   get visiblePlaces(): Place[] {
     this.revision();
-    return this.store.places.filter((p) => !p.hidden);
+    return this.list.filter((p) => !p.hidden);
   }
 
   get featuredPlace(): Place | null {
@@ -64,7 +137,29 @@ export class PlacesService {
 
   getPlace(id: number): Place | null {
     this.revision();
-    return this.store.places.find((p) => p.id === id) ?? null;
+    return this.list.find((p) => p.id === id) ?? null;
+  }
+
+  // Loads the places again from Supabase.
+  async refresh(): Promise<void> {
+    const { data, error } = await this.supabase.supabase
+      .from('places')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      this.loadError.set(error.message);
+      // Never leave the app empty on the very first load: show the sample places instead.
+      if (!this.loadedOnce) {
+        this.list = JSON.parse(JSON.stringify(SEED_PLACES)) as Place[];
+      }
+    } else {
+      this.loadedOnce = true;
+      this.loadError.set('');
+      this.list = (data as PlaceRow[]).map(fromRow);
+    }
+    this.loading.set(false);
+    this.bump();
   }
 
   // ---------- Changing (admin) ----------
@@ -81,7 +176,7 @@ export class PlacesService {
   }
 
   // Adds a place, or updates the one with this id.
-  savePlace(input: PlaceInput, id?: number): PlaceResult {
+  async savePlace(input: PlaceInput, id?: number): Promise<PlaceResult> {
     const problem = this.validate(input);
     if (problem) return { ok: false, error: problem };
 
@@ -94,93 +189,87 @@ export class PlacesService {
     const fields = {
       name: input.name.trim(),
       type: input.type,
-      country: input.country.trim(),
+      location: input.country.trim(),
       price: Math.round(input.price),
       rating: Math.round(input.rating * 10) / 10,
-      reviewCount: Math.round(input.reviewCount),
+      review_count: Math.round(input.reviewCount),
       image: input.image.trim(),
       categories,
       popular: input.popular,
       description,
-      provider: input.provider.trim() || undefined,
+      provider: input.provider.trim() || null,
       hidden: input.hidden,
     };
 
-    const before = JSON.stringify(this.store);
-    let place: Place;
-    const existing = id === undefined ? undefined : this.store.places.find((p) => p.id === id);
+    const query =
+      id === undefined
+        ? this.supabase.supabase.from('places').insert(fields)
+        : this.supabase.supabase.from('places').update(fields).eq('id', id);
 
-    if (existing) {
-      Object.assign(existing, fields);
-      place = existing;
-    } else {
-      place = { id: this.store.nextId, ...fields };
-      this.store.nextId += 1;
-      this.store.places.push(place);
-    }
+    const { data, error } = await query.select().single();
+    if (error) return { ok: false, error: this.explain(error.message) };
 
-    if (!this.save()) {
-      // Roll back when the browser has no room left (large photos fill it up quickly)
-      this.store = JSON.parse(before) as PlaceStore;
-      return { ok: false, error: 'There is not enough storage left for this photo. Use a smaller photo or an image link.' };
+    const place = fromRow(data as PlaceRow);
+    // A hidden place cannot be the featured one
+    if (place.hidden && place.featured) {
+      await this.supabase.supabase.from('places').update({ featured: false }).eq('id', place.id);
+      place.featured = false;
     }
+    await this.refresh();
     return { ok: true, place };
   }
 
-  setHidden(id: number, hidden: boolean): void {
-    const place = this.store.places.find((p) => p.id === id);
-    if (!place) return;
-    place.hidden = hidden;
-    if (hidden) place.featured = false;
-    this.save();
+  async setHidden(id: number, hidden: boolean): Promise<PlaceResult> {
+    const changes = hidden ? { hidden, featured: false } : { hidden };
+    const { error } = await this.supabase.supabase.from('places').update(changes).eq('id', id);
+    if (error) return { ok: false, error: this.explain(error.message) };
+    await this.refresh();
+    return { ok: true };
   }
 
-  // Only one place can be featured at a time.
-  setFeatured(id: number): void {
-    this.store.places.forEach((p) => (p.featured = p.id === id));
-    this.save();
+  // Only one place can be featured at a time (done in one step by a database function).
+  async setFeatured(id: number): Promise<PlaceResult> {
+    const { error } = await this.supabase.supabase.rpc('set_featured_place', { p_id: id });
+    if (error) return { ok: false, error: this.explain(error.message) };
+    await this.refresh();
+    return { ok: true };
   }
 
-  deletePlace(id: number): void {
-    this.store.places = this.store.places.filter((p) => p.id !== id);
-    this.save();
+  async deletePlace(id: number): Promise<PlaceResult> {
+    const { error } = await this.supabase.supabase.from('places').delete().eq('id', id);
+    if (error) return { ok: false, error: this.explain(error.message) };
+    await this.refresh();
+    return { ok: true };
   }
 
   // Brings back the places the app started with.
-  resetToSamples(): void {
-    this.store = this.seed();
-    this.save();
+  async resetToSamples(): Promise<PlaceResult> {
+    const samples = (JSON.parse(JSON.stringify(SEED_PLACES)) as Place[]).map(toRow);
+    const keepIds = samples.map((s) => s.id);
+
+    const removed = await this.supabase.supabase
+      .from('places')
+      .delete()
+      .not('id', 'in', `(${keepIds.join(',')})`);
+    if (removed.error) return { ok: false, error: this.explain(removed.error.message) };
+
+    const restored = await this.supabase.supabase.from('places').upsert(samples, { onConflict: 'id' });
+    if (restored.error) return { ok: false, error: this.explain(restored.error.message) };
+
+    await this.refresh();
+    return { ok: true };
   }
 
   // ---------- Internals ----------
 
-  private seed(): PlaceStore {
-    const places = JSON.parse(JSON.stringify(SEED_PLACES)) as Place[];
-    return { places, nextId: Math.max(0, ...places.map((p) => p.id)) + 1 };
-  }
-
-  private load(): PlaceStore {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<PlaceStore>;
-        if (Array.isArray(parsed.places) && typeof parsed.nextId === 'number') {
-          return { places: parsed.places, nextId: parsed.nextId };
-        }
-      }
-    } catch {
-      // fall through to the sample places
-    }
-    return this.seed();
-  }
-
-  private save(): boolean {
+  private bump(): void {
     this.revision.update((v) => v + 1);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.store));
-      return true;
-    } catch {
-      return false;
+  }
+
+  private explain(message: string): string {
+    if (/row-level security|permission denied|only an admin/i.test(message)) {
+      return 'Only an admin can change places. Please log in with an admin account.';
     }
+    return message;
   }
 }
