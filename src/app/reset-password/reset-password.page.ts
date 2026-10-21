@@ -9,7 +9,7 @@ import { eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import { AppStateService } from '../services/app-state.service';
 import { SupabaseService } from '../services/supabase.service';
 
-type Step = 'checking' | 'form' | 'invalid' | 'done';
+type Step = 'checking' | 'confirm' | 'form' | 'invalid' | 'done';
 
 // The page the "reset your password" email opens.
 // Supabase reads the link and signs the guest in for a moment (a "recovery" session),
@@ -35,6 +35,7 @@ export class ResetPasswordPage implements OnInit, OnDestroy {
   password = '';
   confirm = '';
 
+  private tokenHash = '';
   private unsubscribe?: () => void;
   private timer?: ReturnType<typeof setTimeout>;
 
@@ -47,6 +48,16 @@ export class ResetPasswordPage implements OnInit, OnDestroy {
     const address = `${window.location.search}${window.location.hash}`;
     if (/error(_code|_description)?=/i.test(address)) {
       this.step.set('invalid');
+      return;
+    }
+
+    // The safer email link carries a "token_hash". It is used only when the guest taps
+    // Continue, so email programs that open links in advance cannot use it up.
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get('token_hash');
+    if (tokenHash && params.get('type') === 'recovery') {
+      this.tokenHash = tokenHash;
+      this.step.set('confirm');
       return;
     }
 
@@ -73,6 +84,25 @@ export class ResetPasswordPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.unsubscribe?.();
     if (this.timer) clearTimeout(this.timer);
+  }
+
+  async continueFromLink(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+
+    const { error } = await this.supabase.supabase.auth.verifyOtp({
+      token_hash: this.tokenHash,
+      type: 'recovery',
+    });
+    this.busy.set(false);
+
+    if (error) {
+      this.step.set('invalid');
+      return;
+    }
+    // Remove the one-time code from the address bar.
+    window.history.replaceState({}, '', '/reset-password');
+    this.step.set('form');
   }
 
   async save(): Promise<void> {

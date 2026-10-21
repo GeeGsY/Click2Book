@@ -1,4 +1,3 @@
-
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -40,6 +39,17 @@ export class LoginPage {
       'eye-outline': eyeOutline,
       'eye-off-outline': eyeOffOutline,
     });
+
+    // A reset-password email can send the guest here instead of the reset page
+    // (for example when the redirect address is not allowed in Supabase yet).
+    const link = window.location.hash;
+    if (/type=recovery/.test(link) && /access_token=/.test(link)) {
+      // Supabase already signed them in for a moment: continue on the "new password" page.
+      this.router.navigate(['/reset-password'], { replaceUrl: true });
+    } else if (/error_code=otp_expired|error=access_denied/.test(link)) {
+      this.message =
+        'That reset link has expired or was already used. Enter your email and tap "Forgot password?" to get a new one.';
+    }
   }
 
   async onLogin(): Promise<void> {
