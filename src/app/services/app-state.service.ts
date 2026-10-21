@@ -152,6 +152,38 @@ const peso = new Intl.NumberFormat('en-PH', {
   maximumFractionDigits: 0,
 });
 
+// How a booking looks in the Supabase "bookings" table (see bookings.sql).
+interface BookingRow {
+  id: string;
+  user_id: string;
+  guest_name: string;
+  guest_email: string;
+  destination_name: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  total: number;
+  method: string;
+  status: 'confirmed' | 'cancelled' | 'completed';
+  cancelled_at: string | null;
+  created_at: string;
+}
+
+function bookingFromRow(row: BookingRow): Booking {
+  return {
+    id: row.id,
+    destinationName: row.destination_name,
+    checkIn: row.check_in,
+    checkOut: row.check_out,
+    nights: row.nights,
+    total: row.total,
+    method: row.method,
+    createdAt: row.created_at,
+    status: row.status,
+    cancelledAt: row.cancelled_at ?? undefined,
+  };
+}
+
 /**
  * One shared place for the logged-in user, their bookings and saved
  * destinations, so Login, Register, Home, Payment and User Settings all show
@@ -162,8 +194,18 @@ const peso = new Intl.NumberFormat('en-PH', {
 export class AppStateService {
   constructor(
   private supabaseService: SupabaseService,
-) {}
+) {
+    // After a page reload the Supabase login is still there, so load the bookings again.
+    if (this.session) {
+      void this.refreshAll();
+    }
+  }
   private state: StoredState = this.load();
+
+  // Bookings loaded from Supabase (see the Bookings section below).
+  private remoteBookings: Booking[] = [];
+  private remoteAdminBookings: AdminBooking[] = [];
+  private remoteGuestCount = 0;
 
   // Who is logged in. Kept per visit (sessionStorage) instead of forever, so closing
   // and reopening the app always starts at the Login page. Accounts, bookings and
@@ -209,6 +251,7 @@ export class AppStateService {
 
   this.setSession(email);
   this.save();
+  void this.refreshAll();
 }
 
   // ---------- Session ----------
@@ -218,7 +261,8 @@ export class AppStateService {
     return account ? { name: account.name, email: account.email, phone: account.phone ?? '' } : null;
   }
 
-  updateProfile(name: string, phone: string): AuthResult {
+  // Saves the name and phone in the Supabase "profiles" table.
+  async updateProfile(name: string, phone: string): Promise<AuthResult> {
     const account = this.currentAccount();
     if (!account) return { ok: false, error: 'You are not logged in.' };
 
@@ -230,38 +274,66 @@ export class AppStateService {
       return { ok: false, error: 'Enter a valid mobile number, like 0917 123 4567.' };
     }
 
+    const userId = await this.authUserId();
+    if (!userId) return { ok: false, error: 'You are not logged in. Please log in again.' };
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('profiles')
+      .update({ full_name: cleanName, phone: cleanPhone || null })
+      .eq('id', userId)
+      .select('id');
+
+    if (error) return { ok: false, error: error.message };
+    if (!data || data.length === 0) {
+      return { ok: false, error: 'Your profile could not be saved. Please log in again and try once more.' };
+    }
+
     account.name = cleanName;
     account.phone = cleanPhone;
     this.save();
     return { ok: true };
   }
 
+  // Checks the current password with Supabase, then sets the new one.
   async changePassword(current: string, next: string): Promise<AuthResult> {
     const account = this.currentAccount();
     if (!account) return { ok: false, error: 'You are not logged in.' };
 
-    if ((await this.hash(account.email, current)) !== account.passwordHash) {
-      return { ok: false, error: 'Your current password is incorrect.' };
-    }
     if (next.length < 6) return { ok: false, error: 'The new password must be at least 6 characters.' };
     if (next === current) {
       return { ok: false, error: 'Choose a password that is different from your current one.' };
     }
 
-    account.passwordHash = await this.hash(account.email, next);
-    this.save();
+    const check = await this.supabaseService.supabase.auth.signInWithPassword({
+      email: account.email,
+      password: current,
+    });
+    if (check.error) return { ok: false, error: 'Your current password is incorrect.' };
+
+    const { error } = await this.supabaseService.supabase.auth.updateUser({ password: next });
+    if (error) return { ok: false, error: error.message };
     return { ok: true };
   }
 
-  // Removes the account and everything saved for it (bookings, chats, saved places).
-  deleteAccount(): void {
+  // Deletes the account in Supabase (and its bookings), then clears this device.
+  async deleteAccount(): Promise<AuthResult> {
     const email = this.session;
-    if (!email) return;
+    if (!email) return { ok: false, error: 'You are not logged in.' };
+
+    const { error } = await this.supabaseService.supabase.rpc('delete_my_account');
+    if (error) return { ok: false, error: error.message };
+
+    try {
+      await this.supabaseService.signOut();
+    } catch {
+      // The account is already gone; a failed sign-out call changes nothing.
+    }
 
     this.state.accounts = this.state.accounts.filter((a) => a.email !== email);
     delete this.state.data[email];
     this.setSession(null);
     this.save();
+    return { ok: true };
   }
 
   get isAdmin(): boolean {
@@ -321,30 +393,110 @@ export class AppStateService {
     this.setSession(null);
   }
 }
-  // ---------- Bookings ----------
+  // ---------- Bookings (saved in Supabase) ----------
 
+  // The logged-in guest's bookings, newest first. Loaded from Supabase in the
+  // background; reading this inside a template refreshes when they arrive.
   get bookings(): Booking[] {
-    return this.currentData()?.bookings ?? [];
+    this.revision();
+    return this.remoteBookings;
   }
 
-  addBooking(booking: Omit<Booking, 'id' | 'createdAt'>): Booking | null {
-    const data = this.currentData();
-    if (!data) return null;
+  // Loads the logged-in guest's bookings from Supabase.
+  async refreshBookings(): Promise<void> {
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.remoteBookings = [];
+      this.revision.update((v) => v + 1);
+      return;
+    }
 
-    const saved: Booking = {
-      ...booking,
-      id: `C2B-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 4).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-    };
-    data.bookings.push(saved);
-    this.pushNotification(data, {
-      type: 'booking',
-      title: 'Booking confirmed',
-      text: `${booking.destinationName} · ${booking.nights} night${booking.nights === 1 ? '' : 's'} · ${peso.format(booking.total)} paid`,
-    });
+    const { data, error } = await this.supabaseService.supabase
+      .from('bookings')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      this.remoteBookings = (data as BookingRow[]).map(bookingFromRow);
+      this.revision.update((v) => v + 1);
+    }
+  }
+
+  // Admin only: loads every guest's bookings and the number of guests.
+  async refreshAdminBookings(): Promise<void> {
+    if (!this.isAdmin) return;
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('bookings')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      this.remoteAdminBookings = (data as BookingRow[]).map((row) => ({
+        booking: bookingFromRow(row),
+        guestName: row.guest_name || row.guest_email,
+        guestEmail: row.guest_email,
+      }));
+    }
+
+    const guests = await this.supabaseService.supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'user');
+    this.remoteGuestCount = guests.error
+      ? new Set(this.remoteAdminBookings.map((x) => x.guestEmail)).size
+      : (guests.count ?? 0);
+
+    this.revision.update((v) => v + 1);
+  }
+
+  // Saves a new booking in Supabase. Returns null (and sets bookingError) if it fails.
+  async addBooking(booking: Omit<Booking, 'id' | 'createdAt'>): Promise<Booking | null> {
+    this.bookingError = '';
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.bookingError = 'You are not logged in. Please log in again.';
+      return null;
+    }
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('bookings')
+      .insert({
+        user_id: userId,
+        destination_name: booking.destinationName,
+        check_in: booking.checkIn,
+        check_out: booking.checkOut,
+        nights: booking.nights,
+        total: booking.total,
+        method: booking.method,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.bookingError = error.message;
+      return null;
+    }
+
+    const saved = bookingFromRow(data as BookingRow);
+    this.remoteBookings = [saved, ...this.remoteBookings];
+
+    // Notifications are still kept in this browser (they are not on Supabase yet).
+    const local = this.currentData();
+    if (local) {
+      this.pushNotification(local, {
+        type: 'booking',
+        title: 'Booking confirmed',
+        text: `${booking.destinationName} · ${booking.nights} night${booking.nights === 1 ? '' : 's'} · ${peso.format(booking.total)} paid`,
+      });
+    }
     this.save();
     return saved;
   }
+
+  // Why the last addBooking failed (for the Payment page to show).
+  bookingError = '';
 
   getBooking(id: string): Booking | null {
     return this.bookings.find((b) => b.id === id) ?? null;
@@ -352,7 +504,7 @@ export class AppStateService {
 
   get latestBooking(): Booking | null {
     const list = this.bookings;
-    return list.length > 0 ? list[list.length - 1] : null;
+    return list.length > 0 ? list.reduce((a, b) => (b.createdAt > a.createdAt ? b : a)) : null;
   }
 
   statusOf(booking: Booking): BookingStatus {
@@ -368,23 +520,29 @@ export class AppStateService {
     return checkInTime - Date.now() >= 48 * 60 * 60 * 1000;
   }
 
-  cancelBooking(id: string): AuthResult {
-    const data = this.currentData();
-    const booking = data?.bookings.find((b) => b.id === id);
-    if (!data || !booking) return { ok: false, error: 'Booking not found.' };
+  async cancelBooking(id: string): Promise<AuthResult> {
+    const booking = this.bookings.find((b) => b.id === id);
+    if (!booking) return { ok: false, error: 'Booking not found.' };
 
     if (!this.canCancel(booking)) {
       return { ok: false, error: 'Free cancellation has closed for this booking (less than 48 hours to check-in).' };
     }
 
-    booking.status = 'cancelled';
-    booking.cancelledAt = new Date().toISOString();
-    this.pushNotification(data, {
-      type: 'booking',
-      title: 'Booking cancelled',
-      text: `${booking.destinationName} · ${peso.format(booking.total)} will be refunded (prototype)`,
-    });
-    this.save();
+    // The database checks the 48-hour rule again, so it cannot be skipped from the browser.
+    const { error } = await this.supabaseService.supabase.rpc('cancel_booking', { p_id: id });
+    if (error) return { ok: false, error: error.message };
+
+    await this.refreshBookings();
+
+    const local = this.currentData();
+    if (local) {
+      this.pushNotification(local, {
+        type: 'booking',
+        title: 'Booking cancelled',
+        text: `${booking.destinationName} · ${peso.format(booking.total)} will be refunded (prototype)`,
+      });
+      this.save();
+    }
     return { ok: true };
   }
 
@@ -405,25 +563,17 @@ export class AppStateService {
 
   // ---------- Admin ----------
 
-  // Every booking made by every guest, newest first.
+  // Every booking made by every guest, newest first (admin only).
   get allBookings(): AdminBooking[] {
     this.revision();
-    if (!this.isAdmin) return [];
-
-    const list: AdminBooking[] = [];
-    for (const account of this.state.accounts.filter((a) => a.role !== 'admin')) {
-      for (const booking of this.state.data[account.email]?.bookings ?? []) {
-        list.push({ booking, guestName: account.name, guestEmail: account.email });
-      }
-    }
-    return list.sort((a, b) => b.booking.createdAt.localeCompare(a.booking.createdAt));
+    return this.isAdmin ? this.remoteAdminBookings : [];
   }
 
   get adminStats(): AdminStats {
     const all = this.allBookings;
     const count = (status: BookingStatus) => all.filter((x) => this.statusOf(x.booking) === status).length;
     return {
-      guests: this.state.accounts.filter((a) => a.role !== 'admin').length,
+      guests: this.remoteGuestCount,
       bookings: all.length,
       upcoming: count('upcoming'),
       completed: count('completed'),
@@ -432,29 +582,17 @@ export class AppStateService {
     };
   }
 
-  // The admin marks a stay as finished, or cancels it. The guest gets a notification.
-  adminUpdateBooking(guestEmail: string, bookingId: string, status: 'completed' | 'cancelled'): AuthResult {
+  // The admin marks a stay as finished, or cancels it (checked again by the database).
+  async adminUpdateBooking(bookingId: string, status: 'completed' | 'cancelled'): Promise<AuthResult> {
     if (!this.isAdmin) return { ok: false, error: 'Only an admin can do this.' };
 
-    const data = this.state.data[guestEmail];
-    const booking = data?.bookings.find((b) => b.id === bookingId);
-    if (!data || !booking) return { ok: false, error: 'Booking not found.' };
-    if (this.statusOf(booking) === 'cancelled') return { ok: false, error: 'This booking is already cancelled.' };
-    if (status === 'completed' && booking.status === 'completed') return { ok: false, error: 'This stay is already completed.' };
-
-    booking.status = status;
-    if (status === 'cancelled') {
-      booking.cancelledAt = new Date().toISOString();
-    }
-    this.pushNotification(data, {
-      type: 'booking',
-      title: status === 'completed' ? 'Stay completed' : 'Booking cancelled',
-      text:
-        status === 'completed'
-          ? `${booking.destinationName} · thanks for staying with us!`
-          : `${booking.destinationName} was cancelled by the host · ${peso.format(booking.total)} will be refunded (prototype)`,
+    const { error } = await this.supabaseService.supabase.rpc('admin_update_booking', {
+      p_id: bookingId,
+      p_status: status,
     });
-    this.save();
+    if (error) return { ok: false, error: error.message };
+
+    await this.refreshAdminBookings();
     return { ok: true };
   }
 
@@ -797,8 +935,25 @@ export class AppStateService {
     }
   }
 
+  // Loads this person's bookings (and everyone's, for an admin).
+  async refreshAll(): Promise<void> {
+    await this.refreshBookings();
+    if (this.isAdmin) await this.refreshAdminBookings();
+  }
+
+  // The id of the person logged in to Supabase, or null.
+  private async authUserId(): Promise<string | null> {
+    const { data } = await this.supabaseService.supabase.auth.getSession();
+    return data.session?.user.id ?? null;
+  }
+
   private setSession(email: string | null): void {
     this.session = email;
+    if (!email) {
+      this.remoteBookings = [];
+      this.remoteAdminBookings = [];
+      this.remoteGuestCount = 0;
+    }
     try {
       if (email) {
         sessionStorage.setItem(SESSION_KEY, email);

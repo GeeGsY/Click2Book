@@ -25,6 +25,7 @@ export class EditProfilePage implements ViewWillEnter {
 
   // A signal, because the app runs without zone.js.
   message = signal('');
+  busy = signal(false);
 
   constructor() {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
@@ -43,8 +44,11 @@ export class EditProfilePage implements ViewWillEnter {
     }
   }
 
-  save(): void {
-    const result = this.appState.updateProfile(this.name, this.phone);
+  async save(): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    const result = await this.appState.updateProfile(this.name, this.phone);
+    this.busy.set(false);
     if (result.ok) {
       this.goBack();
     } else {

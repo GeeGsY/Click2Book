@@ -50,9 +50,10 @@
     <!-- Delete -->
     <section class="delete">
       <p class="delete-warning" *ngIf="confirmingDelete()">
-        This permanently deletes your account, bookings, chats and saved places on this device. It cannot be undone.
+        This permanently deletes your account and bookings, and clears your chats and saved places on this device. It cannot be undone.
       </p>
-      <button class="danger-btn" type="button" (click)="deleteAccount()">
+      <p class="delete-warning" *ngIf="message()" role="alert">{{ message() }}</p>
+      <button class="danger-btn" type="button" [disabled]="busy()" (click)="deleteAccount()">
         {{ confirmingDelete() ? 'Yes, delete everything' : 'Delete my account and data' }}
       </button>
       <button class="secondary-btn" type="button" *ngIf="confirmingDelete()" (click)="confirmingDelete.set(false)">

@@ -34,6 +34,10 @@ export class AfterpayPage implements ViewWillEnter {
 
   ionViewWillEnter(): void {
     this.load(history.state);
+    // If the page was reopened (or the app reloaded), fetch the bookings again and re-check.
+    if (!this.booking()) {
+      void this.appState.refreshBookings().then(() => this.load(history.state));
+    }
   }
 
   goHome(): void {

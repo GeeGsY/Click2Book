@@ -20,6 +20,8 @@ export class PrivacyPage {
 
   // Signal, because the app runs without zone.js.
   confirmingDelete = signal(false);
+  message = signal('');
+  busy = signal(false);
 
   constructor() {
     addIcons({ 'arrow-back-outline': arrowBackOutline });
@@ -34,12 +36,20 @@ export class PrivacyPage {
   }
 
   // Two taps: Delete my account, then Yes.
-  deleteAccount(): void {
+  async deleteAccount(): Promise<void> {
+    if (this.busy()) return;
     if (!this.confirmingDelete()) {
       this.confirmingDelete.set(true);
       return;
     }
-    this.appState.deleteAccount();
+    this.message.set('');
+    this.busy.set(true);
+    const result = await this.appState.deleteAccount();
+    this.busy.set(false);
+    if (!result.ok) {
+      this.message.set(result.error ?? 'Could not delete your account.');
+      return;
+    }
     this.router.navigate(['/login'], { replaceUrl: true });
   }
 }

@@ -37,6 +37,11 @@ export class AdminBookingsPage {
     addIcons({ 'arrow-back-outline': arrowBackOutline, 'receipt-outline': receiptOutline });
   }
 
+  // Get the latest bookings from Supabase every time this screen opens.
+  ionViewWillEnter(): void {
+    void this.appState.refreshAdminBookings();
+  }
+
   // Reads a signal inside the service, so the list refreshes by itself.
   get all(): AdminBooking[] {
     return this.appState.allBookings;
@@ -72,7 +77,7 @@ export class AdminBookingsPage {
   }
 
   // Two taps: the action, then Yes.
-  act(item: AdminBooking, action: 'completed' | 'cancelled'): void {
+  async act(item: AdminBooking, action: 'completed' | 'cancelled'): Promise<void> {
     this.message.set('');
     const key = `${action}:${item.booking.id}`;
     if (this.confirming() !== key) {
@@ -80,7 +85,7 @@ export class AdminBookingsPage {
       return;
     }
 
-    const result = this.appState.adminUpdateBooking(item.guestEmail, item.booking.id, action);
+    const result = await this.appState.adminUpdateBooking(item.booking.id, action);
     this.confirming.set(null);
     if (!result.ok) {
       this.message.set(result.error ?? 'Could not update this booking.');

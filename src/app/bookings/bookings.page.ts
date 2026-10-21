@@ -83,14 +83,14 @@ export class BookingsPage implements ViewWillEnter {
   }
 
   // Two taps: Cancel booking, then Yes.
-  cancel(booking: Booking): void {
+  async cancel(booking: Booking): Promise<void> {
     this.message.set('');
     if (this.confirmCancelId() !== booking.id) {
       this.confirmCancelId.set(booking.id);
       return;
     }
 
-    const result = this.appState.cancelBooking(booking.id);
+    const result = await this.appState.cancelBooking(booking.id);
     this.confirmCancelId.set(null);
     if (!result.ok) {
       this.message.set(result.error ?? 'Could not cancel this booking.');
@@ -125,6 +125,8 @@ export class BookingsPage implements ViewWillEnter {
     this.filter.set(this.filters.some((f) => f.id === filter) ? (filter as Filter) : 'all');
     this.message.set('');
     this.refresh();
+    // Get the latest bookings from Supabase, then show them.
+    void this.appState.refreshBookings().then(() => this.refresh());
   }
 
   private refresh(): void {

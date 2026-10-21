@@ -106,6 +106,11 @@ export class UserSettingPage implements ViewWillEnter {
   ionViewWillEnter(): void {
     this.refresh();
     this.cdr.markForCheck();
+    // The booking numbers come from Supabase, so reload them and update the tiles.
+    void this.appState.refreshBookings().then(() => {
+      this.refresh();
+      this.cdr.markForCheck();
+    });
   }
 
   private refresh(): void {

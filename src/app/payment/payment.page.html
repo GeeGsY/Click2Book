@@ -106,6 +106,7 @@
     </div>
 
     <!-- 5. Continue -->
+    <p class="pay-error" *ngIf="payError" role="alert">{{ payError }}</p>
     <div class="action-row">
       <button class="primary-btn" type="button" [disabled]="!canContinue" (click)="processPayment()">
         Continue

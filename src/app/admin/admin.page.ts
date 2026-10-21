@@ -45,6 +45,11 @@ export class AdminPage {
     return this.placesService.visiblePlaces.length;
   }
 
+  // Get the latest numbers from Supabase every time the dashboard opens.
+  ionViewWillEnter(): void {
+    void this.appState.refreshAdminBookings();
+  }
+
   go(path: string): void {
     this.router.navigate([path]);
   }

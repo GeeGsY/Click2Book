@@ -185,16 +185,20 @@ export class PaymentPage implements OnInit, ViewWillEnter {
     this.securityCode = '';
   }
 
-  processPayment() {
+  // Shown under the Continue button when the booking could not be saved.
+  payError = '';
+
+  async processPayment(): Promise<void> {
     if (!this.canContinue || this.paying) return;
     this.paying = true;
+    this.payError = '';
 
     // TODO: send the payment to a real payment provider. For now the booking is
     // saved in the app so User Settings can show it.
     const saved = this.selectedSaved;
     const method = this.paymentMethods.find((m) => m.id === this.selectedPaymentMethod);
     const methodLabel = saved ? `${saved.label} ••${saved.last4}` : method?.label ?? this.selectedPaymentMethod;
-    const booking = this.appState.addBooking({
+    const booking = await this.appState.addBooking({
       destinationName: this.accommodationName,
       checkIn: this.checkIn,
       checkOut: this.checkOut,
@@ -205,6 +209,8 @@ export class PaymentPage implements OnInit, ViewWillEnter {
 
     if (!booking) {
       this.paying = false;
+      this.payError = this.appState.bookingError || 'Your booking could not be saved. Please try again.';
+      this.cdr.markForCheck();
       return;
     }
 
