@@ -14,6 +14,12 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login.page').then((m) => m.LoginPage),
   },
   {
+    // The page the password-reset email opens (no login needed).
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./reset-password/reset-password.page').then((m) => m.ResetPasswordPage),
+  },
+  {
     path: 'register',
     loadComponent: () => import('./register/register.page').then((m) => m.RegisterPage),
   },

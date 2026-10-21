@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import {
   createClient,
@@ -87,8 +86,11 @@ export class SupabaseService {
   }
 
   async resetPassword(email: string): Promise<void> {
+    // The link in the email opens the app's "Set a new password" page.
+    // This address must also be listed under Redirect URLs in the Supabase dashboard.
     const { error } = await this.client.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
+      { redirectTo: `${window.location.origin}/reset-password` },
     );
 
     if (error) {
