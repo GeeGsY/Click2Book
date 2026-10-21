@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
-  appName: 'aragonshop',
+  appId: 'com.click2book.app',
+  appName: 'Click2Book',
   webDir: 'www'
 };
 
