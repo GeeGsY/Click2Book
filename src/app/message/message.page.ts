@@ -62,7 +62,8 @@ export class MessagePage implements ViewWillEnter {
   }
 
   private refresh(): void {
-    this.appState.ensureStarterData();
     this.threads.set(this.appState.threads);
+    // Get the latest conversations from Supabase, then show them.
+    void this.appState.refreshInbox().then(() => this.threads.set(this.appState.threads));
   }
 }

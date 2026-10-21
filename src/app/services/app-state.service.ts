@@ -123,34 +123,56 @@ const SESSION_KEY = 'click2book.session.v1';
 const ADMIN_EMAIL = 'admin@gmail.com';
 const ADMIN_PASSWORD = 'admin101';
 
-// Sample conversations every account starts with, so the inbox is not empty.
-// Remove this list (and the starter code that uses it) once real hosts exist.
-const SAMPLE_CHATS = [
-  {
-    title: 'Palaui Island, Santa Ana, Cagayan',
-    image: 'assets/img/palui1.jpg',
-    text: 'Magandang araw! Welcome to Palaui Island. Boats leave Santa Ana port in the morning, so tell us your arrival time and we will arrange your transfer.',
-    hoursAgo: 3,
-  },
-  {
-    title: 'Anguib Beach, Santa Ana, Cagayan',
-    image: undefined,
-    text: 'Hi! Thanks for your interest in Anguib Beach. Let us know your dates and how many guests are coming.',
-    hoursAgo: 26,
-  },
-  {
-    title: 'Callao Cave, Peñablanca, Cagayan',
-    image: undefined,
-    text: 'Hello! The caves are open daily from 8:00 AM. Ask us anything about tours and nearby stays.',
-    hoursAgo: 50,
-  },
-];
+// Rows as they come from the Supabase tables (see rest-of-backend.sql).
+interface MessageRow {
+  id: string;
+  thread: string;
+  sender: 'user' | 'host';
+  body: string;
+  created_at: string;
+}
 
-const peso = new Intl.NumberFormat('en-PH', {
-  style: 'currency',
-  currency: 'PHP',
-  maximumFractionDigits: 0,
-});
+interface ThreadRow {
+  thread: string;
+  image: string | null;
+  last_read_at: string;
+}
+
+interface NotificationRow {
+  id: string;
+  type: 'welcome' | 'booking' | 'message';
+  title: string;
+  body: string;
+  thread: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+interface PlaceSummaryRow {
+  id: number;
+  name: string;
+  location: string;
+  price: number;
+  rating: number;
+  review_count: number;
+  image: string;
+  description: string;
+  gallery: string[] | null;
+}
+
+interface FavoriteRow {
+  place_id: number;
+  created_at: string;
+  places: PlaceSummaryRow | PlaceSummaryRow[] | null;
+}
+
+interface PaymentMethodRow {
+  id: string;
+  type: 'ewallet' | 'card' | 'bank';
+  label: string;
+  last4: string;
+  is_default: boolean;
+}
 
 // How a booking looks in the Supabase "bookings" table (see bookings.sql).
 interface BookingRow {
@@ -206,6 +228,14 @@ export class AppStateService {
   private remoteBookings: Booking[] = [];
   private remoteAdminBookings: AdminBooking[] = [];
   private remoteGuestCount = 0;
+
+  // The rest of the data loaded from Supabase.
+  private remoteMessages: Record<string, ChatMessage[]> = {};
+  private remoteThreads: Record<string, { image?: string; lastRead: string }> = {};
+  private remoteNotifications: AppNotification[] = [];
+  private remoteFavorites: SavedPlace[] = [];
+  private remotePaymentMethods: PaymentMethodInfo[] = [];
+  private starterChecked = false;
 
   // Who is logged in. Kept per visit (sessionStorage) instead of forever, so closing
   // and reopening the app always starts at the Login page. Accounts, bookings and
@@ -482,16 +512,8 @@ export class AppStateService {
     const saved = bookingFromRow(data as BookingRow);
     this.remoteBookings = [saved, ...this.remoteBookings];
 
-    // Notifications are still kept in this browser (they are not on Supabase yet).
-    const local = this.currentData();
-    if (local) {
-      this.pushNotification(local, {
-        type: 'booking',
-        title: 'Booking confirmed',
-        text: `${booking.destinationName} · ${booking.nights} night${booking.nights === 1 ? '' : 's'} · ${peso.format(booking.total)} paid`,
-      });
-    }
-    this.save();
+    // The database adds the "Booking confirmed" notification; fetch it.
+    void this.refreshNotifications();
     return saved;
   }
 
@@ -532,17 +554,8 @@ export class AppStateService {
     const { error } = await this.supabaseService.supabase.rpc('cancel_booking', { p_id: id });
     if (error) return { ok: false, error: error.message };
 
-    await this.refreshBookings();
-
-    const local = this.currentData();
-    if (local) {
-      this.pushNotification(local, {
-        type: 'booking',
-        title: 'Booking cancelled',
-        text: `${booking.destinationName} · ${peso.format(booking.total)} will be refunded (prototype)`,
-      });
-      this.save();
-    }
+    // The database adds the "Booking cancelled" notification; fetch it too.
+    await Promise.all([this.refreshBookings(), this.refreshNotifications()]);
     return { ok: true };
   }
 
@@ -596,200 +609,327 @@ export class AppStateService {
     return { ok: true };
   }
 
-  // ---------- Messages ----------
+  // ---------- Messages (saved in Supabase) ----------
 
   getMessages(thread: string): ChatMessage[] {
-    return [...(this.currentData()?.messages?.[thread] ?? [])];
+    this.revision();
+    return [...(this.remoteMessages[thread] ?? [])];
   }
 
-  addMessage(
-    thread: string,
-    from: ChatMessage['from'],
-    text: string,
-    options: { sentAt?: string; notify?: boolean } = {},
-  ): ChatMessage | null {
-    const data = this.currentData();
-    if (!data) return null;
-
-    data.messages ??= {};
-    data.messages[thread] ??= [];
-    const message: ChatMessage = {
-      id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-      from,
-      text,
-      sentAt: options.sentAt ?? new Date().toISOString(),
-    };
-    data.messages[thread].push(message);
-
-    // A new message from a host that the user is not looking at becomes a notification.
-    if (from === 'host' && options.notify) {
-      this.pushNotification(data, {
-        type: 'message',
-        title: `New message from ${thread.split(',')[0]}`,
-        text,
-        thread,
-      });
+  // Loads every conversation of the logged-in guest.
+  async refreshMessages(): Promise<void> {
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.remoteMessages = {};
+      this.remoteThreads = {};
+      this.revision.update((v) => v + 1);
+      return;
     }
-    this.save();
+
+    const [messages, threads] = await Promise.all([
+      this.supabaseService.supabase
+        .from('messages')
+        .select('id, thread, sender, body, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(1000),
+      this.supabaseService.supabase
+        .from('chat_threads')
+        .select('thread, image, last_read_at')
+        .eq('user_id', userId),
+    ]);
+
+    if (!messages.error) {
+      const grouped: Record<string, ChatMessage[]> = {};
+      for (const row of messages.data as MessageRow[]) {
+        (grouped[row.thread] ??= []).push({
+          id: row.id,
+          from: row.sender,
+          text: row.body,
+          sentAt: row.created_at,
+        });
+      }
+      this.remoteMessages = grouped;
+    }
+    if (!threads.error) {
+      const state: Record<string, { image?: string; lastRead: string }> = {};
+      for (const row of threads.data as ThreadRow[]) {
+        state[row.thread] = { image: row.image ?? undefined, lastRead: row.last_read_at };
+      }
+      this.remoteThreads = state;
+    }
+    this.revision.update((v) => v + 1);
+  }
+
+  // Saves a message from the guest. The "host" answer is created by the database.
+  async sendMessage(thread: string, text: string): Promise<ChatMessage | null> {
+    const userId = await this.authUserId();
+    if (!userId) return null;
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('messages')
+      .insert({ user_id: userId, thread, sender: 'user', body: text })
+      .select('id, thread, sender, body, created_at')
+      .single();
+    if (error) return null;
+
+    const row = data as MessageRow;
+    const message: ChatMessage = { id: row.id, from: row.sender, text: row.body, sentAt: row.created_at };
+    (this.remoteMessages[thread] ??= []).push(message);
+    this.revision.update((v) => v + 1);
     return message;
+  }
+
+  // Opening a conversation: marks it read, adds the host's greeting the first time
+  // (and the booking note after paying), and remembers the place picture.
+  async openThread(thread: string, image?: string, afterPayment = false): Promise<void> {
+    // Uploaded photos are long "data:" text; only normal links are kept for the picture.
+    const picture = image && !image.startsWith('data:') ? image : null;
+    const { error } = await this.supabaseService.supabase.rpc('open_thread', {
+      p_thread: thread,
+      p_image: picture,
+      p_after_payment: afterPayment,
+    });
+    if (error) return;
+    await Promise.all([this.refreshMessages(), this.refreshNotifications()]);
   }
 
   // One entry per conversation, newest first.
   get threads(): ChatThread[] {
     this.revision();
-    const data = this.currentData();
-    if (!data?.messages) return [];
-
-    return Object.entries(data.messages)
+    return Object.entries(this.remoteMessages)
       .filter(([, list]) => list.length > 0)
       .map(([title, list]) => {
-        const readAt = data.lastRead?.[title] ?? '';
+        const state = this.remoteThreads[title];
+        const readAt = state?.lastRead ? Date.parse(state.lastRead) : 0;
         return {
           id: title,
           title,
-          image: data.threadImages?.[title],
+          image: state?.image,
           last: list[list.length - 1],
-          unread: list.filter((m) => m.from === 'host' && m.sentAt > readAt).length,
+          unread: list.filter((m) => m.from === 'host' && Date.parse(m.sentAt) > readAt).length,
         };
       })
-      .sort((a, b) => b.last.sentAt.localeCompare(a.last.sentAt));
+      .sort((a, b) => Date.parse(b.last.sentAt) - Date.parse(a.last.sentAt));
   }
 
   markThreadRead(thread: string): void {
-    const data = this.currentData();
-    if (!data) return;
-    data.lastRead ??= {};
-    data.lastRead[thread] = new Date().toISOString();
-    this.save();
+    // Update the screen straight away, then tell Supabase.
+    const state = this.remoteThreads[thread];
+    this.remoteThreads[thread] = { image: state?.image, lastRead: new Date().toISOString() };
+    this.remoteNotifications = this.remoteNotifications.map((n) =>
+      n.type === 'message' && n.thread === thread ? { ...n, read: true } : n,
+    );
+    this.revision.update((v) => v + 1);
+    void this.supabaseService.supabase.rpc('mark_thread_read', { p_thread: thread });
   }
 
-  setThreadImage(thread: string, image: string): void {
-    const data = this.currentData();
-    if (!data || data.threadImages?.[thread] === image) return;
-    data.threadImages ??= {};
-    data.threadImages[thread] = image;
-    this.save();
-  }
-
-  // ---------- Notifications ----------
+  // ---------- Notifications (saved in Supabase) ----------
 
   get notifications(): AppNotification[] {
     this.revision();
-    const list = this.currentData()?.notifications ?? [];
-    return [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return [...this.remoteNotifications];
   }
 
   get unreadNotificationCount(): number {
     this.revision();
-    return (this.currentData()?.notifications ?? []).filter((n) => !n.read).length;
+    return this.remoteNotifications.filter((n) => !n.read).length;
+  }
+
+  async refreshNotifications(): Promise<void> {
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.remoteNotifications = [];
+      this.revision.update((v) => v + 1);
+      return;
+    }
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('notifications')
+      .select('id, type, title, body, thread, read, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (!error) {
+      this.remoteNotifications = (data as NotificationRow[]).map((row) => ({
+        id: row.id,
+        type: row.type,
+        title: row.title,
+        text: row.body,
+        createdAt: row.created_at,
+        read: row.read,
+        thread: row.thread ?? undefined,
+      }));
+      this.revision.update((v) => v + 1);
+    }
   }
 
   markNotificationRead(id: string): void {
-    const note = this.currentData()?.notifications?.find((n) => n.id === id);
-    if (note && !note.read) {
-      note.read = true;
-      this.save();
-    }
+    const note = this.remoteNotifications.find((n) => n.id === id);
+    if (!note || note.read) return;
+
+    this.remoteNotifications = this.remoteNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
+    this.revision.update((v) => v + 1);
+    void this.supabaseService.supabase.from('notifications').update({ read: true }).eq('id', id);
   }
 
   markAllNotificationsRead(): void {
-    const list = this.currentData()?.notifications;
-    if (list?.some((n) => !n.read)) {
-      list.forEach((n) => (n.read = true));
-      this.save();
-    }
+    if (!this.remoteNotifications.some((n) => !n.read)) return;
+
+    this.remoteNotifications = this.remoteNotifications.map((n) => ({ ...n, read: true }));
+    this.revision.update((v) => v + 1);
+    void this.supabaseService.supabase.from('notifications').update({ read: true }).eq('read', false);
   }
 
-  // Adds the welcome notification and the sample conversations once per account.
-  ensureStarterData(): void {
-    if (this.isAdmin) return;
-    const data = this.currentData();
-    if (!data || data.starterAdded) return;
-
-    data.starterAdded = true;
-    this.pushNotification(data, {
-      type: 'welcome',
-      title: 'Welcome to Click2Book',
-      text: 'Search a destination, pick your dates, and book in a few taps. Your chats and bookings will show up here.',
-    });
-
-    if (!data.messages || Object.keys(data.messages).length === 0) {
-      data.messages = {};
-      data.threadImages = {};
-      for (const chat of SAMPLE_CHATS) {
-        const sentAt = new Date(Date.now() - chat.hoursAgo * 3600 * 1000).toISOString();
-        data.messages[chat.title] = [
-          { id: `sample-${chat.title}`, from: 'host', text: chat.text, sentAt },
-        ];
-        if (chat.image) data.threadImages[chat.title] = chat.image;
-      }
-    }
-    this.save();
+  // Asks the database to add the welcome notification and the sample conversations (once per guest).
+  async ensureStarterData(): Promise<void> {
+    if (!this.session || this.isAdmin || this.starterChecked) return;
+    this.starterChecked = true;
+    const { error } = await this.supabaseService.supabase.rpc('ensure_starter_data');
+    if (error) this.starterChecked = false;
   }
 
-  // ---------- Saved destinations ----------
+  // Reloads the inbox and the notification list (used by the Messages and Notifications tabs).
+  async refreshInbox(): Promise<void> {
+    await this.ensureStarterData();
+    await Promise.all([this.refreshMessages(), this.refreshNotifications()]);
+  }
+
+  // ---------- Saved destinations (saved in Supabase) ----------
 
   get favoritesCount(): number {
-    return this.currentData()?.favorites.length ?? 0;
+    this.revision();
+    return this.remoteFavorites.length;
   }
 
   isFavorite(destinationId: number): boolean {
-    return this.currentData()?.favorites.includes(destinationId) ?? false;
+    this.revision();
+    return this.remoteFavorites.some((p) => p.id === destinationId);
   }
 
-  toggleFavorite(destinationId: number, place?: SavedPlace): void {
-    const data = this.currentData();
-    if (!data) return;
-
-    if (data.favorites.includes(destinationId)) {
-      data.favorites = data.favorites.filter((id) => id !== destinationId);
-      if (data.savedPlaces) delete data.savedPlaces[destinationId];
-    } else {
-      data.favorites = [...data.favorites, destinationId];
-      if (place) {
-        data.savedPlaces ??= {};
-        data.savedPlaces[destinationId] = place;
-      }
+  async refreshFavorites(): Promise<void> {
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.remoteFavorites = [];
+      this.revision.update((v) => v + 1);
+      return;
     }
-    this.save();
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('favorites')
+      .select('place_id, created_at, places(id, name, location, price, rating, review_count, image, description, gallery)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (!error) {
+      const saved: SavedPlace[] = [];
+      for (const row of data as unknown as FavoriteRow[]) {
+        // A place the admin hid or deleted is not returned, so it drops out of the list.
+        const place = Array.isArray(row.places) ? row.places[0] : row.places;
+        if (!place) continue;
+        saved.push({
+          id: Number(place.id),
+          name: place.name,
+          country: place.location,
+          price: place.price,
+          rating: Number(place.rating),
+          reviewCount: place.review_count,
+          image: place.image,
+          description: place.description,
+          gallery: place.gallery ?? undefined,
+        });
+      }
+      this.remoteFavorites = saved;
+      this.revision.update((v) => v + 1);
+    }
   }
 
-  // Fills in the copy of a place that was saved before copies were kept.
-  rememberFavorite(destinationId: number, place: SavedPlace): void {
-    const data = this.currentData();
-    if (!data || !data.favorites.includes(destinationId) || data.savedPlaces?.[destinationId]) return;
+  // The heart changes on screen straight away; Supabase is updated right after.
+  async toggleFavorite(destinationId: number, place?: SavedPlace): Promise<void> {
+    if (!this.session) return;
 
-    data.savedPlaces ??= {};
-    data.savedPlaces[destinationId] = place;
-    this.save();
+    const wasSaved = this.remoteFavorites.some((p) => p.id === destinationId);
+    if (wasSaved) {
+      this.remoteFavorites = this.remoteFavorites.filter((p) => p.id !== destinationId);
+    } else if (place) {
+      this.remoteFavorites = [place, ...this.remoteFavorites];
+    }
+    this.revision.update((v) => v + 1);
+
+    const userId = await this.authUserId();
+    if (!userId) {
+      await this.refreshFavorites();
+      return;
+    }
+
+    const result = wasSaved
+      ? await this.supabaseService.supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', userId)
+          .eq('place_id', destinationId)
+      : await this.supabaseService.supabase
+          .from('favorites')
+          .insert({ user_id: userId, place_id: destinationId });
+
+    // On a problem (or when no copy of the place was given), show what Supabase really has.
+    if (result.error || (!wasSaved && !place)) {
+      await this.refreshFavorites();
+    }
+  }
+
+  // Kept so older screens still compile: saved places now come from the places table itself.
+  rememberFavorite(_destinationId: number, _place: SavedPlace): void {
+    // nothing to do
   }
 
   // Saved places, most recently saved first.
   get savedPlaces(): SavedPlace[] {
     this.revision();
-    const data = this.currentData();
-    if (!data) return [];
-
-    return [...data.favorites]
-      .reverse()
-      .map((id) => data.savedPlaces?.[id])
-      .filter((place): place is SavedPlace => !!place);
+    return [...this.remoteFavorites];
   }
 
-  // ---------- Payment methods ----------
+  // ---------- Payment methods (saved in Supabase; only the last 4 digits) ----------
 
   get paymentMethods(): PaymentMethodInfo[] {
     this.revision();
-    return [...(this.currentData()?.paymentMethods ?? [])];
+    return [...this.remotePaymentMethods];
   }
 
   get defaultPaymentMethod(): PaymentMethodInfo | null {
     return this.paymentMethods.find((m) => m.isDefault) ?? null;
   }
 
-  addPaymentMethod(type: PaymentMethodInfo['type'], label: string, number: string): AuthResult {
-    const data = this.currentData();
-    if (!data) return { ok: false, error: 'You are not logged in.' };
+  async refreshPaymentMethods(): Promise<void> {
+    const userId = await this.authUserId();
+    if (!userId) {
+      this.remotePaymentMethods = [];
+      this.revision.update((v) => v + 1);
+      return;
+    }
+
+    const { data, error } = await this.supabaseService.supabase
+      .from('payment_methods')
+      .select('id, type, label, last4, is_default')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (!error) {
+      this.remotePaymentMethods = (data as PaymentMethodRow[]).map((row) => ({
+        id: row.id,
+        type: row.type,
+        label: row.label,
+        last4: row.last4,
+        isDefault: row.is_default,
+      }));
+      this.revision.update((v) => v + 1);
+    }
+  }
+
+  async addPaymentMethod(type: PaymentMethodInfo['type'], label: string, number: string): Promise<AuthResult> {
+    const userId = await this.authUserId();
+    if (!userId) return { ok: false, error: 'You are not logged in.' };
 
     const name = label.trim();
     const digits = number.replace(/\D/g, '');
@@ -800,42 +940,28 @@ export class AppStateService {
     if (digits.length < limits[0] || digits.length > limits[1]) {
       return { ok: false, error: `Enter a valid ${numberName}.` };
     }
-
-    data.paymentMethods ??= [];
-    if (data.paymentMethods.length >= 5) {
+    if (this.remotePaymentMethods.length >= 5) {
       return { ok: false, error: 'You can save up to 5 payment methods. Remove one first.' };
     }
 
-    // Only the last 4 digits are kept; the full number is never stored.
-    data.paymentMethods.push({
-      id: `pm-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`,
-      type,
-      label: name,
-      last4: digits.slice(-4),
-      isDefault: data.paymentMethods.length === 0,
-    });
-    this.save();
+    // Only the last 4 digits ever leave this device; the full number is never sent or stored.
+    const { error } = await this.supabaseService.supabase
+      .from('payment_methods')
+      .insert({ user_id: userId, type, label: name, last4: digits.slice(-4) });
+    if (error) return { ok: false, error: error.message };
+
+    await this.refreshPaymentMethods();
     return { ok: true };
   }
 
-  removePaymentMethod(id: string): void {
-    const data = this.currentData();
-    if (!data?.paymentMethods) return;
-
-    const wasDefault = data.paymentMethods.find((m) => m.id === id)?.isDefault;
-    data.paymentMethods = data.paymentMethods.filter((m) => m.id !== id);
-    if (wasDefault && data.paymentMethods.length > 0) {
-      data.paymentMethods[0].isDefault = true;
-    }
-    this.save();
+  async removePaymentMethod(id: string): Promise<void> {
+    const { error } = await this.supabaseService.supabase.from('payment_methods').delete().eq('id', id);
+    if (!error) await this.refreshPaymentMethods();
   }
 
-  setDefaultPaymentMethod(id: string): void {
-    const data = this.currentData();
-    if (!data?.paymentMethods) return;
-
-    data.paymentMethods.forEach((m) => (m.isDefault = m.id === id));
-    this.save();
+  async setDefaultPaymentMethod(id: string): Promise<void> {
+    const { error } = await this.supabaseService.supabase.rpc('set_default_payment_method', { p_id: id });
+    if (!error) await this.refreshPaymentMethods();
   }
 
   // ---------- Internals ----------
@@ -850,19 +976,6 @@ export class AppStateService {
       role: 'admin',
     });
     this.save();
-  }
-
-  private pushNotification(
-    data: UserData,
-    note: Pick<AppNotification, 'type' | 'title' | 'text' | 'thread'>,
-  ): void {
-    data.notifications ??= [];
-    data.notifications.push({
-      ...note,
-      id: `n-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-      createdAt: new Date().toISOString(),
-      read: false,
-    });
   }
 
   private currentAccount(): Account | null {
@@ -935,9 +1048,16 @@ export class AppStateService {
     }
   }
 
-  // Loads this person's bookings (and everyone's, for an admin).
+  // Loads everything saved in Supabase for this person (and every booking, for an admin).
   async refreshAll(): Promise<void> {
-    await this.refreshBookings();
+    await this.ensureStarterData();
+    await Promise.all([
+      this.refreshBookings(),
+      this.refreshNotifications(),
+      this.refreshMessages(),
+      this.refreshFavorites(),
+      this.refreshPaymentMethods(),
+    ]);
     if (this.isAdmin) await this.refreshAdminBookings();
   }
 
@@ -953,6 +1073,12 @@ export class AppStateService {
       this.remoteBookings = [];
       this.remoteAdminBookings = [];
       this.remoteGuestCount = 0;
+      this.remoteMessages = {};
+      this.remoteThreads = {};
+      this.remoteNotifications = [];
+      this.remoteFavorites = [];
+      this.remotePaymentMethods = [];
+      this.starterChecked = false;
     }
     try {
       if (email) {
@@ -962,9 +1088,6 @@ export class AppStateService {
       }
     } catch {
       // Storage can be blocked; the login still works until the page is reloaded.
-    }
-    if (email) {
-      this.ensureStarterData();
     }
     this.revision.update((v) => v + 1);
   }

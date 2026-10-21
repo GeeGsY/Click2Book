@@ -16,40 +16,6 @@ import { addIcons } from 'ionicons';
 import { arrowBackOutline, send } from 'ionicons/icons';
 import { AppStateService, ChatMessage } from '../services/app-state.service';
 
-// The prototype has no server, so the "host" answers with these ready-made replies.
-const AUTO_REPLIES: { match: RegExp; reply: string }[] = [
-  {
-    match: /check.?in|check.?out|arriv|early|late/i,
-    reply:
-      'Check-in starts at 2:00 PM and check-out is at 11:00 AM. Early check-in depends on availability, so please tell us your arrival time.',
-  },
-  {
-    match: /direction|where|location|map|how do i get|transport|airport|pickup|pick up/i,
-    reply: 'We can share directions and arrange a pickup. Where will you be coming from?',
-  },
-  {
-    match: /cancel|refund/i,
-    reply: 'Free cancellation is available up to 48 hours before arrival. After that, one night is charged.',
-  },
-  {
-    match: /price|rate|pay|discount|promo|how much/i,
-    reply: 'All rates are per night in Philippine peso (₱). You can review the full total before you pay.',
-  },
-  {
-    match: /breakfast|food|meal|eat/i,
-    reply: 'Meals can be arranged on request. Let us know how many guests are coming and any food restrictions.',
-  },
-  {
-    match: /guest|extra|person|pax|kid|child|pet/i,
-    reply: 'Extra guests are possible. Please tell us how many people are coming so we can confirm.',
-  },
-  {
-    match: /thank|salamat/i,
-    reply: "You're welcome! Salamat, and we look forward to hosting you.",
-  },
-];
-const FALLBACK_REPLY = 'Thanks for your message! The host will get back to you shortly.';
-
 @Component({
   selector: 'app-chat',
   templateUrl: './chat.page.html',
@@ -108,21 +74,27 @@ export class ChatPage implements ViewWillEnter, ViewWillLeave {
     this.router.navigate(['/home']);
   }
 
-  send() {
+  async send(): Promise<void> {
     const text = this.draft.trim();
     if (!text) return;
 
     const thread = this.thread;
-    this.appState.addMessage(thread, 'user', text);
     this.draft = '';
+    const message = await this.appState.sendMessage(thread, text);
+    if (!message) {
+      // It could not be saved: put the text back so nothing is lost.
+      this.draft = text;
+      this.cdr.markForCheck();
+      return;
+    }
     this.refreshMessages();
 
-    // The host "types" for a moment, then answers.
+    // The host "types" for a moment, then the answer (created by the database) appears.
     this.typing.set(true);
     this.scrollToBottom();
-    setTimeout(() => {
+    setTimeout(async () => {
+      await this.appState.refreshMessages();
       const watching = this.active && thread === this.thread;
-      this.appState.addMessage(thread, 'host', this.replyFor(text), { notify: !watching });
       if (watching) {
         this.appState.markThreadRead(thread);
       }
@@ -148,39 +120,19 @@ export class ChatPage implements ViewWillEnter, ViewWillLeave {
     this.title.set(this.thread);
     this.afterPayment.set(!!state.afterPayment);
     this.typing.set(false);
-    if (state.image) {
-      this.appState.setThreadImage(this.thread, state.image);
-    }
 
-    // First visit to a conversation starts with a greeting from the host.
-    if (this.appState.getMessages(this.thread).length === 0 && this.appState.isLoggedIn) {
-      this.appState.addMessage(
-        this.thread,
-        'host',
-        `Hi! Thanks for your interest in ${this.thread}. Ask us anything about your stay.`,
-      );
-    }
-
-    // Opened from the confirmation screen: the host acknowledges the booking once.
-    if (state.afterPayment) {
-      const note =
-        'Your payment was received and your booking is confirmed. Message us if you need anything before arrival.';
-      if (!this.appState.getMessages(this.thread).some((m) => m.text === note)) {
-        this.appState.addMessage(this.thread, 'host', note);
-      }
-    }
-
-    this.appState.markThreadRead(this.thread);
+    // Show what is already loaded, then let Supabase mark it read, add the host's greeting
+    // the first time (and the booking note after paying) and send the latest messages.
     this.refreshMessages();
+    const thread = this.thread;
+    void this.appState.openThread(thread, state.image, !!state.afterPayment).then(() => {
+      if (thread === this.thread) this.refreshMessages();
+    });
   }
 
   private refreshMessages(): void {
     this.messages.set(this.appState.getMessages(this.thread));
     this.scrollToBottom();
-  }
-
-  private replyFor(text: string): string {
-    return AUTO_REPLIES.find((r) => r.match.test(text))?.reply ?? FALLBACK_REPLY;
   }
 
   private scrollToBottom(): void {

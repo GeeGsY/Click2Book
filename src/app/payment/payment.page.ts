@@ -87,6 +87,11 @@ export class PaymentPage implements OnInit, ViewWillEnter {
   ionViewWillEnter(): void {
     this.loadSavedMethods();
     this.cdr.markForCheck();
+    // Get the latest saved methods from Supabase, then show them.
+    void this.appState.refreshPaymentMethods().then(() => {
+      this.loadSavedMethods();
+      this.cdr.markForCheck();
+    });
   }
 
   get selectedSaved(): PaymentMethodInfo | null {

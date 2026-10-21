@@ -90,7 +90,8 @@ export class NotificationsPage implements ViewWillEnter {
   }
 
   private refresh(): void {
-    this.appState.ensureStarterData();
     this.items.set(this.appState.notifications);
+    // Get the latest notifications from Supabase, then show them.
+    void this.appState.refreshInbox().then(() => this.items.set(this.appState.notifications));
   }
 }

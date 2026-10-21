@@ -39,6 +39,8 @@ export class SavedPage implements ViewWillEnter {
 
   ionViewWillEnter(): void {
     this.refresh();
+    // Get the latest saved places from Supabase, then show them.
+    void this.appState.refreshFavorites().then(() => this.refresh());
   }
 
   trackById(_: number, place: SavedPlace): number {

@@ -50,6 +50,8 @@ export class PaymentMethodsPage implements ViewWillEnter {
 
   ionViewWillEnter(): void {
     this.refresh();
+    // Get the latest saved methods from Supabase, then show them.
+    void this.appState.refreshPaymentMethods().then(() => this.refresh());
   }
 
   trackById(_: number, method: PaymentMethodInfo): string {
@@ -93,8 +95,8 @@ export class PaymentMethodsPage implements ViewWillEnter {
     this.message.set('');
   }
 
-  add(): void {
-    const result = this.appState.addPaymentMethod(this.formType(), this.label, this.number);
+  async add(): Promise<void> {
+    const result = await this.appState.addPaymentMethod(this.formType(), this.label, this.number);
     if (result.ok) {
       this.label = '';
       this.number = ''; // the full number is never kept
@@ -106,19 +108,19 @@ export class PaymentMethodsPage implements ViewWillEnter {
     }
   }
 
-  makeDefault(method: PaymentMethodInfo): void {
-    this.appState.setDefaultPaymentMethod(method.id);
+  async makeDefault(method: PaymentMethodInfo): Promise<void> {
+    await this.appState.setDefaultPaymentMethod(method.id);
     this.refresh();
   }
 
   // Two taps: Remove, then Yes.
-  remove(method: PaymentMethodInfo): void {
+  async remove(method: PaymentMethodInfo): Promise<void> {
     if (this.confirmRemoveId() !== method.id) {
       this.confirmRemoveId.set(method.id);
       return;
     }
-    this.appState.removePaymentMethod(method.id);
     this.confirmRemoveId.set(null);
+    await this.appState.removePaymentMethod(method.id);
     this.refresh();
   }
 
