@@ -47,6 +47,9 @@ interface Destination {
 
 
   description: string;
+
+  // Up to 2 extra photos chosen by the admin (shown as the 2nd and 3rd picture)
+  gallery?: string[];
 }
 
 
@@ -55,7 +58,7 @@ const STAY_POLICY =
   ' Check-in is from 2:00 PM and check-out is 11:00 AM. Free cancellation up to 48 hours before arrival.';
 
 
-// Extra gallery photos used by the destination-details page.
+// Stock photos used only when a place has no extra photos of its own.
 const GALLERY_PHOTOS = [
   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80',
   'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=400&q=80',
@@ -308,8 +311,11 @@ export class HomePage implements ViewWillEnter {
 
             // Keep three images for the
             // destination details page.
+            // The place's own extra photos come first; the
+            // stock photos below only fill any empty spots.
             thumbnails: [
               dest.image,
+              ...(dest.gallery ?? []),
               ...GALLERY_PHOTOS
             ]
 
@@ -350,7 +356,7 @@ export class HomePage implements ViewWillEnter {
       image: dest.image,
       description: dest.description,
       // only present when a place has its own photo gallery
-      gallery: (dest as unknown as { gallery?: string[] }).gallery,
+      gallery: dest.gallery,
     };
   }
 

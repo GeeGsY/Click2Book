@@ -10,6 +10,7 @@ export interface PlaceInput {
   price: number;
   description: string;
   image: string;
+  gallery: string[]; // up to 2 extra photos shown under the main photo
   tags: string[]; // extra categories such as beach or nature
   provider: string;
   rating: number;
@@ -182,6 +183,7 @@ export class PlacesService {
 
     const typeCategory = TYPE_CATEGORY[input.type];
     const categories = [...new Set([...(typeCategory ? [typeCategory] : []), ...input.tags])];
+    const gallery = input.gallery.map((g) => g.trim()).filter(Boolean).slice(0, 2);
     const description = /cancellation/i.test(input.description)
       ? input.description.trim()
       : input.description.trim() + STAY_POLICY;
@@ -199,6 +201,7 @@ export class PlacesService {
       description,
       provider: input.provider.trim() || null,
       hidden: input.hidden,
+      gallery: gallery.length ? gallery : null,
     };
 
     const query =

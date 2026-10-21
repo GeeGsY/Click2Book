@@ -59,7 +59,7 @@ export class SavedPage implements ViewWillEnter {
         destination: {
           ...place,
           heroImage: place.image,
-          thumbnails: place.gallery ?? [place.image, ...GALLERY_FILLER],
+          thumbnails: [place.image, ...(place.gallery ?? []), ...GALLERY_FILLER],
         },
       },
     });

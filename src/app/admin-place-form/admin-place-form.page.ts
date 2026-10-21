@@ -31,6 +31,7 @@ export class AdminPlaceFormPage implements ViewWillEnter {
   description = '';
   provider = '';
   imageUrl = '';
+  galleryUrls = ['', ''];
   rating = 4.5;
   reviewCount = 0;
   popular = false;
@@ -40,6 +41,7 @@ export class AdminPlaceFormPage implements ViewWillEnter {
   type = signal<PlaceType>('resort');
   tags = signal<string[]>([]);
   image = signal('');
+  gallery = signal<string[]>(['', '']);
   message = signal('');
   busy = signal(false);
 
@@ -93,6 +95,38 @@ export class AdminPlaceFormPage implements ViewWillEnter {
     }
   }
 
+  // The two extra photos (shown as the 2nd and 3rd picture under the main photo).
+  onGalleryUrlChange(index: number): void {
+    this.setGallery(index, this.galleryUrls[index].trim());
+  }
+
+  async onGalleryFile(event: Event, index: number): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.message.set('');
+    this.busy.set(true);
+    try {
+      this.setGallery(index, await fileToDataUrl(file));
+      this.galleryUrls[index] = '';
+    } catch (error) {
+      this.message.set(error instanceof Error ? error.message : 'Could not read that photo.');
+    } finally {
+      this.busy.set(false);
+      input.value = '';
+    }
+  }
+
+  clearGallery(index: number): void {
+    this.galleryUrls[index] = '';
+    this.setGallery(index, '');
+  }
+
+  private setGallery(index: number, value: string): void {
+    this.gallery.update((list) => list.map((v, i) => (i === index ? value : v)));
+  }
+
   async save(): Promise<void> {
     if (this.busy()) return;
     const input: PlaceInput = {
@@ -102,6 +136,7 @@ export class AdminPlaceFormPage implements ViewWillEnter {
       price: Number(this.price),
       description: this.description,
       image: this.image(),
+      gallery: this.gallery(),
       tags: this.tags(),
       provider: this.provider,
       rating: Number(this.rating),
@@ -139,6 +174,8 @@ export class AdminPlaceFormPage implements ViewWillEnter {
       this.type.set('resort');
       this.tags.set([]);
       this.image.set('');
+      this.gallery.set(['', '']);
+      this.galleryUrls = ['', ''];
       return;
     }
 
@@ -156,5 +193,8 @@ export class AdminPlaceFormPage implements ViewWillEnter {
     this.image.set(place.image);
     // only show a link in the box; uploaded photos are long data
     this.imageUrl = place.image.startsWith('data:') ? '' : place.image;
+    const extra = place.gallery ?? [];
+    this.gallery.set([extra[0] ?? '', extra[1] ?? '']);
+    this.galleryUrls = this.gallery().map((g) => (g.startsWith('data:') ? '' : g));
   }
 }
