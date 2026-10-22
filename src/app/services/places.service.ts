@@ -209,8 +209,18 @@ export class PlacesService {
         ? this.supabase.supabase.from('places').insert(fields)
         : this.supabase.supabase.from('places').update(fields).eq('id', id);
 
-    const { data, error } = await query.select().single();
+    // maybeSingle(): "no row changed" is not a crash, it is explained below.
+    const { data, error } = await query.select().maybeSingle();
     if (error) return { ok: false, error: this.explain(error.message) };
+    if (!data) {
+      return {
+        ok: false,
+        error:
+          id === undefined
+            ? 'The place could not be saved. Please log in with an admin account and try again.'
+            : 'The place could not be saved. Your account may not be an admin, or the place was deleted by someone else. Refresh and try again.',
+      };
+    }
 
     const place = fromRow(data as PlaceRow);
     // A hidden place cannot be the featured one
@@ -270,7 +280,7 @@ export class PlacesService {
   }
 
   private explain(message: string): string {
-    if (/row-level security|permission denied|only an admin/i.test(message)) {
+    if (/row-level security|permission denied|only an admin|cannot coerce/i.test(message)) {
       return 'Only an admin can change places. Please log in with an admin account.';
     }
     return message;
