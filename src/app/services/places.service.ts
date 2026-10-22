@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Place, PlaceType, STAY_POLICY, TYPE_CATEGORY } from '../data/place.model';
+import { Place, PlaceType, STAY_POLICY, TYPE_CATEGORY, combineRating } from '../data/place.model';
 import { SEED_PLACES } from '../data/place-seed';
 import { SupabaseService } from './supabase.service';
 
@@ -42,17 +42,23 @@ interface PlaceRow {
   hidden: boolean;
   featured: boolean;
   gallery: string[] | null;
+  review_sum: number | null;
+  review_n: number | null;
 }
 
 function fromRow(row: PlaceRow): Place {
+  const combined = combineRating(row.rating, row.review_count, row.review_sum ?? 0, row.review_n ?? 0);
   return {
     id: Number(row.id),
     name: row.name,
     type: row.type,
     country: row.location,
     price: row.price,
-    rating: Number(row.rating),
-    reviewCount: row.review_count,
+    rating: combined.rating,
+    reviewCount: combined.reviewCount,
+    baseRating: Number(row.rating),
+    baseReviewCount: row.review_count,
+    guestReviewCount: row.review_n ?? 0,
     image: row.image,
     categories: row.categories ?? [],
     popular: row.popular,
@@ -64,7 +70,7 @@ function fromRow(row: PlaceRow): Place {
   };
 }
 
-function toRow(place: Place): Omit<PlaceRow, 'id'> & { id: number } {
+function toRow(place: Place): Omit<PlaceRow, 'id' | 'review_sum' | 'review_n'> & { id: number } {
   return {
     id: place.id,
     name: place.name,

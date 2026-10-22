@@ -42,7 +42,26 @@
       <p class="description">{{ destination.description }}</p>
     </div>
 
-    <!-- 6. Price + book -->
+    <!-- 6. Guest reviews -->
+    <div class="info-card reviews" *ngIf="destination.id">
+      <h2 class="reviews-title">Guest reviews</h2>
+      <p class="reviews-empty" *ngIf="reviewsLoading">Loading reviews...</p>
+      <p class="reviews-empty" *ngIf="!reviewsLoading && reviews.length === 0">
+        No written reviews yet. Guests can review a place after a completed stay.
+      </p>
+      <article class="review" *ngFor="let r of reviews">
+        <header class="review-head">
+          <strong class="review-name">{{ r.guestName }}</strong>
+          <span class="review-stars" [attr.aria-label]="r.rating + ' out of 5 stars'">
+            <ion-icon *ngFor="let s of stars" [name]="s <= r.rating ? 'star' : 'star-outline'"></ion-icon>
+          </span>
+          <time class="review-date">{{ r.createdAt | date: 'MMM d, y' }}</time>
+        </header>
+        <p class="review-text" *ngIf="r.comment">{{ r.comment }}</p>
+      </article>
+    </div>
+
+    <!-- 7. Price + book -->
     <div class="action-row">
       <div class="action-price">
         <span class="price">{{ destination.price | currency: 'PHP' : 'symbol' : '1.0-0' }}</span>

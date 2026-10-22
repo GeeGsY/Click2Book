@@ -30,6 +30,7 @@ export class PaymentPage implements OnInit, ViewWillEnter {
 
   // Booking Data (falls back to placeholders if opened without a booking)
   accommodationName: string = 'Your stay';
+  placeId: number | undefined;
   // Total in Philippine peso (₱), shown with the PHP currency pipe
   bookingTotal: number = 0;
 
@@ -64,6 +65,7 @@ export class PaymentPage implements OnInit, ViewWillEnter {
     const state = navigation?.extras?.state as
       | {
           accommodationName?: string;
+          placeId?: number;
           bookingTotal?: number;
           checkIn?: string;
           checkOut?: string;
@@ -74,6 +76,7 @@ export class PaymentPage implements OnInit, ViewWillEnter {
     if (state?.accommodationName) {
       this.accommodationName = state.accommodationName;
     }
+    this.placeId = typeof state?.placeId === 'number' ? state.placeId : undefined;
     if (typeof state?.bookingTotal === 'number') {
       this.bookingTotal = state.bookingTotal;
     }
@@ -205,6 +208,7 @@ export class PaymentPage implements OnInit, ViewWillEnter {
     const methodLabel = saved ? `${saved.label} ••${saved.last4}` : method?.label ?? this.selectedPaymentMethod;
     const booking = await this.appState.addBooking({
       destinationName: this.accommodationName,
+      placeId: this.placeId,
       checkIn: this.checkIn,
       checkOut: this.checkOut,
       nights: this.nights,

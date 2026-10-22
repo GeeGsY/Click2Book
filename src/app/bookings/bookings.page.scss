@@ -159,3 +159,67 @@
     color: rgba(31, 42, 34, 0.5);
   }
 }
+// ---- Reviews ----
+.booking {
+  .reviewed {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--teal);
+
+    ion-icon {
+      color: var(--coral);
+    }
+  }
+
+  .review-box {
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(14, 59, 67, 0.05);
+  }
+
+  .review-label {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ocean);
+  }
+
+  .star-picker {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+
+  .star-btn {
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--coral);
+    cursor: pointer;
+  }
+
+  .review-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(14, 59, 67, 0.2);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    resize: vertical;
+  }
+
+  .review-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+}

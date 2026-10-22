@@ -1,6 +1,7 @@
 import { SupabaseService } from './supabase.service';
 import type { Click2BookProfile } from './supabase.service';
 import { Injectable, signal } from '@angular/core';
+import { combineRating } from '../data/place.model';
 
 export interface UserProfile {
   name: string;
@@ -19,6 +20,8 @@ export interface Booking {
   createdAt: string;
   status?: 'confirmed' | 'cancelled' | 'completed';
   cancelledAt?: string;
+  // Which place was booked (needed to write a review)
+  placeId?: number;
 }
 
 export type BookingStatus = 'upcoming' | 'completed' | 'cancelled';
@@ -158,6 +161,8 @@ interface PlaceSummaryRow {
   image: string;
   description: string;
   gallery: string[] | null;
+  review_sum: number | null;
+  review_n: number | null;
 }
 
 interface FavoriteRow {
@@ -189,6 +194,7 @@ interface BookingRow {
   status: 'confirmed' | 'cancelled' | 'completed';
   cancelled_at: string | null;
   created_at: string;
+  place_id: number | null;
 }
 
 function bookingFromRow(row: BookingRow): Booking {
@@ -203,6 +209,7 @@ function bookingFromRow(row: BookingRow): Booking {
     createdAt: row.created_at,
     status: row.status,
     cancelledAt: row.cancelled_at ?? undefined,
+    placeId: row.place_id ?? undefined,
   };
 }
 
@@ -505,6 +512,7 @@ export class AppStateService {
         nights: booking.nights,
         total: booking.total,
         method: booking.method,
+        place_id: booking.placeId ?? null,
       })
       .select()
       .single();
@@ -846,7 +854,7 @@ export class AppStateService {
 
     const { data, error } = await this.supabaseService.supabase
       .from('favorites')
-      .select('place_id, created_at, places(id, name, location, price, rating, review_count, image, description, gallery)')
+      .select('place_id, created_at, places(id, name, location, price, rating, review_count, image, description, gallery, review_sum, review_n)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -856,13 +864,14 @@ export class AppStateService {
         // A place the admin hid or deleted is not returned, so it drops out of the list.
         const place = Array.isArray(row.places) ? row.places[0] : row.places;
         if (!place) continue;
+        const combined = combineRating(place.rating, place.review_count, place.review_sum ?? 0, place.review_n ?? 0);
         saved.push({
           id: Number(place.id),
           name: place.name,
           country: place.location,
           price: place.price,
-          rating: Number(place.rating),
-          reviewCount: place.review_count,
+          rating: combined.rating,
+          reviewCount: combined.reviewCount,
           image: place.image,
           description: place.description,
           gallery: place.gallery ?? undefined,

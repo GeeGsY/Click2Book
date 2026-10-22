@@ -184,8 +184,9 @@ export class AdminPlaceFormPage implements ViewWillEnter {
     this.price = place.price;
     this.description = place.description;
     this.provider = place.provider ?? '';
-    this.rating = place.rating;
-    this.reviewCount = place.reviewCount;
+    // The form edits the starting numbers; real guest reviews are added on top of them.
+    this.rating = place.baseRating ?? place.rating;
+    this.reviewCount = place.baseReviewCount ?? place.reviewCount;
     this.popular = place.popular;
     this.visible = !place.hidden;
     this.type.set(place.type);

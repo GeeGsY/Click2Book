@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, chatbubbleEllipsesOutline, star } from 'ionicons/icons';
+import { arrowBackOutline, chatbubbleEllipsesOutline, star, starOutline } from 'ionicons/icons';
+import { Review, ReviewsService } from '../services/reviews.service';
 
 // Sample destination shown if the page is opened without picking one from Home.
 // Price is per night in Philippine peso (₱).
@@ -34,15 +35,22 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
   // The app runs without zone.js, so changes made after an await or from a
   // lifecycle hook must ask Angular to refresh the view.
   private cdr = inject(ChangeDetectorRef);
+  private reviewsService = inject(ReviewsService);
 
   destination: any = this.cloneDefault();
   activeImage = 0;
+
+  // The newest written guest reviews of this place.
+  reviews: Review[] = [];
+  reviewsLoading = false;
+  readonly stars = [1, 2, 3, 4, 5];
 
   constructor(private router: Router) {
     addIcons({
       'arrow-back-outline': arrowBackOutline,
       'chatbubble-ellipses-outline': chatbubbleEllipsesOutline,
       star: star,
+      'star-outline': starOutline,
     });
   }
 
@@ -98,6 +106,23 @@ export class DestinationDetailsPage implements OnInit, ViewWillEnter {
     // Keep exactly three previews, as in the wireframe.
     this.destination.thumbnails = (this.destination.thumbnails ?? []).slice(0, 3);
     this.activeImage = 0;
+
+    void this.loadReviews();
+  }
+
+  private async loadReviews(): Promise<void> {
+    const placeId = this.destination?.id;
+    this.reviews = [];
+    if (typeof placeId !== 'number') return;
+
+    this.reviewsLoading = true;
+    const list = await this.reviewsService.forPlace(placeId);
+    // Ignore the answer if another place was opened in the meantime.
+    if (this.destination?.id === placeId) {
+      this.reviews = list;
+      this.reviewsLoading = false;
+      this.cdr.markForCheck();
+    }
   }
 
   private cloneDefault() {

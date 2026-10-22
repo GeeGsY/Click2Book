@@ -188,6 +188,7 @@ export class BookingPage implements OnInit, ViewWillEnter {
     this.router.navigate(['/payment'], {
       state: {
         accommodationName: this.destinationName,
+        placeId: typeof this.destination?.id === 'number' ? this.destination.id : undefined,
         bookingTotal: this.totalCost,
         checkIn: this.checkIn,
         checkOut: this.checkOut,

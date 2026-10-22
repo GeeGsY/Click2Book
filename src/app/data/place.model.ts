@@ -26,6 +26,25 @@ export interface Place {
   featured?: boolean;
   // Optional own photos for the details page
   gallery?: string[];
+
+  // `rating` and `reviewCount` above already include the guests' real reviews.
+  // These keep what the admin typed in (the starting numbers) and how many real reviews exist.
+  baseRating?: number;
+  baseReviewCount?: number;
+  guestReviewCount?: number;
+}
+
+// The starting rating counts like `baseCount` reviews; real reviews (`sum` of stars, `n` of them) are added to it.
+export function combineRating(
+  baseRating: number,
+  baseCount: number,
+  sum: number,
+  n: number,
+): { rating: number; reviewCount: number } {
+  const total = baseCount + n;
+  if (n <= 0 || total <= 0) return { rating: Number(baseRating), reviewCount: total };
+  const average = (Number(baseRating) * baseCount + sum) / total;
+  return { rating: Math.round(average * 10) / 10, reviewCount: total };
 }
 
 export interface PlaceOption<T extends string = string> {

@@ -3,7 +3,15 @@ import { CommonModule, Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import { arrowBackOutline, receiptOutline, downloadOutline, chatbubbleEllipsesOutline } from 'ionicons/icons';
+import {
+  arrowBackOutline,
+  receiptOutline,
+  downloadOutline,
+  chatbubbleEllipsesOutline,
+  star,
+  starOutline,
+} from 'ionicons/icons';
+import { ReviewsService } from '../services/reviews.service';
 import { AppStateService, Booking, BookingStatus } from '../services/app-state.service';
 import { buildReceiptPdf, downloadBlob } from '../utils/receipt';
 
@@ -20,6 +28,7 @@ export class BookingsPage implements ViewWillEnter {
   private router = inject(Router);
   private location = inject(Location);
   private appState = inject(AppStateService);
+  private reviews = inject(ReviewsService);
 
   readonly filters: { id: Filter; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -35,6 +44,15 @@ export class BookingsPage implements ViewWillEnter {
   confirmCancelId = signal<string | null>(null);
   totalSpent = signal(0);
 
+  // Reviews: which stays are already reviewed, and the review being written.
+  readonly stars = [1, 2, 3, 4, 5];
+  reviewedIds = signal<Set<string>>(new Set());
+  reviewingId = signal<string | null>(null);
+  reviewRating = signal(0);
+  reviewText = signal('');
+  reviewBusy = signal(false);
+  thanks = signal('');
+
   visible = computed(() =>
     this.all().filter((b) => this.filter() === 'all' || this.statusOf(b) === this.filter()),
   );
@@ -45,6 +63,8 @@ export class BookingsPage implements ViewWillEnter {
       'receipt-outline': receiptOutline,
       'download-outline': downloadOutline,
       'chatbubble-ellipses-outline': chatbubbleEllipsesOutline,
+      star: star,
+      'star-outline': starOutline,
     });
     this.load(this.router.getCurrentNavigation()?.extras?.state);
   }
@@ -68,6 +88,57 @@ export class BookingsPage implements ViewWillEnter {
 
   canCancel(booking: Booking): boolean {
     return this.appState.canCancel(booking);
+  }
+
+  // A finished stay that was not reviewed yet.
+  canReview(booking: Booking): boolean {
+    return (
+      this.statusOf(booking) === 'completed' &&
+      booking.status !== 'cancelled' &&
+      booking.placeId !== undefined &&
+      !this.reviewedIds().has(booking.id)
+    );
+  }
+
+  isReviewed(booking: Booking): boolean {
+    return this.reviewedIds().has(booking.id);
+  }
+
+  openReview(booking: Booking): void {
+    this.message.set('');
+    this.thanks.set('');
+    this.reviewRating.set(0);
+    this.reviewText.set('');
+    this.reviewingId.set(booking.id);
+  }
+
+  closeReview(): void {
+    this.reviewingId.set(null);
+  }
+
+  onReviewInput(event: Event): void {
+    this.reviewText.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  async submitReview(booking: Booking): Promise<void> {
+    if (this.reviewBusy()) return;
+    if (this.reviewRating() < 1) {
+      this.message.set('Choose 1 to 5 stars first.');
+      return;
+    }
+
+    this.message.set('');
+    this.reviewBusy.set(true);
+    const result = await this.reviews.submit(booking.id, this.reviewRating(), this.reviewText());
+    this.reviewBusy.set(false);
+
+    if (!result.ok) {
+      this.message.set(result.error ?? 'Could not save your review.');
+      return;
+    }
+    this.reviewedIds.update((ids) => new Set(ids).add(booking.id));
+    this.reviewingId.set(null);
+    this.thanks.set('Thanks! Your review was saved.');
   }
 
   count(filter: Filter): number {
@@ -124,9 +195,11 @@ export class BookingsPage implements ViewWillEnter {
     const { filter } = (navState ?? {}) as { filter?: Filter };
     this.filter.set(this.filters.some((f) => f.id === filter) ? (filter as Filter) : 'all');
     this.message.set('');
+    this.thanks.set('');
     this.refresh();
     // Get the latest bookings from Supabase, then show them.
     void this.appState.refreshBookings().then(() => this.refresh());
+    void this.reviews.myReviewedBookingIds().then((ids) => this.reviewedIds.set(ids));
   }
 
   private refresh(): void {

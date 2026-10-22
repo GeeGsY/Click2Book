@@ -27,6 +27,7 @@
     </div>
 
     <p class="notice" *ngIf="message()" role="alert">{{ message() }}</p>
+    <p class="notice ok" *ngIf="thanks()" role="status">{{ thanks() }}</p>
 
     <!-- Bookings -->
     <div class="list" *ngIf="visible().length > 0">
@@ -60,12 +61,50 @@
             <button class="small-btn danger" type="button" *ngIf="canCancel(b)" (click)="cancel(b)">
               Cancel booking
             </button>
+            <button class="small-btn solid" type="button" *ngIf="canReview(b) && reviewingId() !== b.id" (click)="openReview(b)">
+              <ion-icon name="star-outline"></ion-icon> Rate your stay
+            </button>
+            <span class="reviewed" *ngIf="isReviewed(b)">
+              <ion-icon name="star"></ion-icon> Reviewed
+            </span>
           </ng-container>
           <ng-template #confirmCancel>
             <span class="confirm-text">Cancel and refund this booking?</span>
             <button class="small-btn danger solid-danger" type="button" (click)="cancel(b)">Yes, cancel</button>
             <button class="small-btn" type="button" (click)="confirmCancelId.set(null)">Keep it</button>
           </ng-template>
+        </div>
+
+        <!-- Write a review (completed stays only) -->
+        <div class="review-box" *ngIf="reviewingId() === b.id">
+          <p class="review-label">How was your stay?</p>
+          <div class="star-picker" role="radiogroup" aria-label="Your rating">
+            <button
+              type="button"
+              class="star-btn"
+              role="radio"
+              *ngFor="let s of stars"
+              [attr.aria-checked]="reviewRating() === s"
+              [attr.aria-label]="s + (s === 1 ? ' star' : ' stars')"
+              (click)="reviewRating.set(s)"
+            >
+              <ion-icon [name]="s <= reviewRating() ? 'star' : 'star-outline'"></ion-icon>
+            </button>
+          </div>
+          <textarea
+            class="review-input"
+            rows="3"
+            maxlength="500"
+            placeholder="Tell other guests about your stay (optional)"
+            [value]="reviewText()"
+            (input)="onReviewInput($event)"
+          ></textarea>
+          <div class="review-actions">
+            <button class="small-btn solid" type="button" [disabled]="reviewBusy()" (click)="submitReview(b)">
+              {{ reviewBusy() ? 'Saving...' : 'Submit review' }}
+            </button>
+            <button class="small-btn" type="button" (click)="closeReview()">Cancel</button>
+          </div>
         </div>
 
         <p class="policy" *ngIf="statusOf(b) === 'upcoming' && !canCancel(b)">
