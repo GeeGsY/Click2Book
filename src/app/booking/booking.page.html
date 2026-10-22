@@ -16,7 +16,7 @@
         <span class="label">Check in</span>
         <input type="date" aria-label="Check in date" [(ngModel)]="checkIn" (ngModelChange)="onCheckInChange()" />
       </div>
-      <div class="date-box">
+      <div class="date-box out">
         <span class="label">Check out</span>
         <input type="date" aria-label="Check out date" [(ngModel)]="checkOut" (ngModelChange)="onCheckOutChange()" />
       </div>
@@ -48,6 +48,12 @@
           [attr.aria-label]="cell.date | date: 'MMM d, y'"
           (click)="onDayClick(cell)"
         >{{ cell.day }}</button>
+      </div>
+
+      <!-- Colors used in the calendar -->
+      <div class="legend">
+        <span class="legend-item"><span class="swatch in"></span> Check in</span>
+        <span class="legend-item"><span class="swatch out"></span> Check out</span>
       </div>
     </div>
 

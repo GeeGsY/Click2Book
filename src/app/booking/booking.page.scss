@@ -88,6 +88,45 @@ ion-content.booking-page {
   box-sizing: border-box;
 }
 
+// The check-out box matches its color in the calendar.
+.date-box.out {
+  border-color: var(--coral);
+
+  .label {
+    color: #c4412d;
+  }
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(31, 42, 34, 0.7);
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+
+    &.in {
+      background: var(--ocean);
+    }
+
+    &.out {
+      background: var(--coral);
+    }
+  }
+}
+
 .label {
   display: block;
   font-size: 12px;
@@ -189,10 +228,17 @@ ion-content.booking-page {
     opacity: 0.35;
   }
 
-  &.selected,
-  &.selected:hover {
+  // Check in: dark teal. Check out: coral.
+  &.check-in,
+  &.check-in:hover {
     background: var(--ocean);
     color: #ffffff;
+  }
+
+  &.check-out,
+  &.check-out:hover {
+    background: var(--coral);
+    color: var(--ink);
   }
 
   &.selected-range,

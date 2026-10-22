@@ -166,7 +166,9 @@ export class BookingPage implements OnInit, ViewWillEnter {
   dayClass(cell: CalendarCell): string {
     const classes = ['day'];
     if (!cell.inCurrentMonth) classes.push('muted');
-    if (cell.iso === this.checkIn || cell.iso === this.checkOut) classes.push('selected');
+    // Check-in and check-out get their own colors (a one-day range counts as check-in).
+    if (cell.iso === this.checkIn) classes.push('check-in');
+    else if (cell.iso === this.checkOut) classes.push('check-out');
     if (this.checkIn && this.checkOut && cell.iso > this.checkIn && cell.iso < this.checkOut) {
       classes.push('selected-range');
     }
