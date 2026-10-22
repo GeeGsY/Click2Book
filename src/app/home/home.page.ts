@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, OnDestroy, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AppStateService } from '../services/app-state.service';
 import { PlacesService } from '../services/places.service';
 import { CATEGORY_OPTIONS } from '../data/place.model';
-import { IonContent, IonIcon, ViewWillEnter } from '@ionic/angular';
+import { IonContent, IonIcon, ViewWillEnter, ViewWillLeave } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 
 import {
@@ -85,7 +85,7 @@ const GALLERY_PHOTOS = [
 })
 
 
-export class HomePage implements ViewWillEnter {
+export class HomePage implements ViewWillEnter, ViewWillLeave, OnDestroy {
 
   // Search box value
   searchTerm = '';
@@ -155,8 +155,85 @@ export class HomePage implements ViewWillEnter {
   // FEATURED DESTINATION
   // ============================================================
 
-  get featured(): Destination | null {
-    return this.places.featuredPlace;
+  // Every featured place; Home slides through them like a carousel.
+  get featuredList(): Destination[] {
+    return this.places.featuredPlaces;
+  }
+
+  trackByPlace(_: number, place: Destination): number {
+    return place.id;
+  }
+
+  // The slide that is showing now (drives the dots).
+  slideIndex = signal(0);
+
+  @ViewChild('featuredTrack') private featuredTrack?: ElementRef<HTMLElement>;
+
+  private slideTimer?: ReturnType<typeof setInterval>;
+  private resumeTimer?: ReturnType<typeof setTimeout>;
+
+  // Moves to the next featured place every few seconds (not when the person prefers less motion).
+  startSlides(): void {
+    this.stopSlides();
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+    this.slideTimer = setInterval(() => {
+      const count = this.featuredList.length;
+      if (count > 1) {
+        this.goToSlide((this.slideIndex() + 1) % count);
+      }
+    }, 5000);
+  }
+
+  stopSlides(): void {
+    if (this.slideTimer) clearInterval(this.slideTimer);
+    if (this.resumeTimer) clearTimeout(this.resumeTimer);
+    this.slideTimer = undefined;
+    this.resumeTimer = undefined;
+  }
+
+  // While a finger or the mouse is on the carousel it stops sliding by itself.
+  pauseSlides(): void {
+    this.stopSlides();
+  }
+
+  resumeSlides(): void {
+    if (this.resumeTimer) clearTimeout(this.resumeTimer);
+    this.resumeTimer = setTimeout(() => this.startSlides(), 3000);
+  }
+
+  // While the carousel scrolls by itself, the scroll events must not move the dots back and forth.
+  private ignoreScrollUntil = 0;
+
+  goToSlide(index: number): void {
+    const track = this.featuredTrack?.nativeElement;
+    this.slideIndex.set(index);
+    this.ignoreScrollUntil = Date.now() + 700;
+    track?.scrollTo({ left: index * track.clientWidth, behavior: 'smooth' });
+  }
+
+  // Back to the first featured place (for example after the admin changed the list).
+  private resetSlides(): void {
+    this.slideIndex.set(0);
+    const track = this.featuredTrack?.nativeElement;
+    if (track) track.scrollLeft = 0;
+  }
+
+  // Keeps the dots in step when the person swipes.
+  onTrackScroll(): void {
+    if (Date.now() < this.ignoreScrollUntil) return;
+    const track = this.featuredTrack?.nativeElement;
+    if (!track || track.clientWidth === 0) return;
+    const index = Math.round(track.scrollLeft / track.clientWidth);
+    if (index !== this.slideIndex()) this.slideIndex.set(index);
+  }
+
+  ionViewWillLeave(): void {
+    this.stopSlides();
+  }
+
+  ngOnDestroy(): void {
+    this.stopSlides();
   }
 
 
@@ -337,6 +414,8 @@ export class HomePage implements ViewWillEnter {
   ionViewWillEnter(): void {
     // Pick up places the admin added or changed since this screen was last open.
     void this.places.refresh();
+    this.resetSlides();
+    this.startSlides();
 
     for (const dest of this.destinations) {
       if (this.state.isFavorite(dest.id)) {

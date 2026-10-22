@@ -115,14 +115,58 @@
 }
 
 // ---- Featured destination ----
+.featured-carousel {
+  margin-bottom: 26px;
+}
+
+// The cards sit in a row; swiping (or the timer) scrolls from one to the next.
+.featured-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  // Room for the cards' shadow, which the scrolling box would otherwise cut off.
+  padding-bottom: 16px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.featured-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 0;
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(14, 59, 67, 0.25);
+    cursor: pointer;
+    transition: width 0.2s ease, background 0.2s ease;
+
+    &.active {
+      width: 22px;
+      border-radius: 8px;
+      background: var(--coral);
+    }
+  }
+}
+
 .featured-card {
   position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   height: 234px;
   border-radius: 20px;
   background-size: cover;
   background-position: center;
   overflow: hidden;
-  margin-bottom: 26px;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(14, 59, 67, 0.18);
 

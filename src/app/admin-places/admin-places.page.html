@@ -45,8 +45,9 @@
               <ion-icon [name]="place.hidden ? 'eye-outline' : 'eye-off-outline'"></ion-icon>
               {{ place.hidden ? 'Show' : 'Hide' }}
             </button>
-            <button class="small-btn" type="button" *ngIf="!place.hidden && !place.featured" (click)="feature(place)">
-              <ion-icon name="star-outline"></ion-icon> Feature
+            <button class="small-btn" type="button" *ngIf="!place.hidden" (click)="toggleFeatured(place)">
+              <ion-icon [name]="place.featured ? 'star' : 'star-outline'"></ion-icon>
+              {{ place.featured ? 'Unfeature' : 'Feature' }}
             </button>
             <button class="small-btn danger" type="button" (click)="remove(place)">Delete</button>
           </ng-container>

@@ -137,6 +137,14 @@ export class PlacesService {
     return this.list.filter((p) => !p.hidden);
   }
 
+  // Every featured place (shown as a sliding carousel on Home).
+  // If the admin featured none, the first visible place is shown so Home is never empty.
+  get featuredPlaces(): Place[] {
+    const visible = this.visiblePlaces;
+    const featured = visible.filter((p) => p.featured);
+    return featured.length > 0 ? featured : visible.slice(0, 1);
+  }
+
   get featuredPlace(): Place | null {
     const visible = this.visiblePlaces;
     return visible.find((p) => p.featured) ?? visible[0] ?? null;
@@ -246,10 +254,20 @@ export class PlacesService {
     return { ok: true };
   }
 
-  // Only one place can be featured at a time (done in one step by a database function).
-  async setFeatured(id: number): Promise<PlaceResult> {
-    const { error } = await this.supabase.supabase.rpc('set_featured_place', { p_id: id });
+  // Features or un-features a place. Any number of places can be featured at the same time.
+  async setFeatured(id: number, featured = true): Promise<PlaceResult> {
+    let query = this.supabase.supabase.from('places').update({ featured }).eq('id', id);
+    // A hidden place cannot be featured.
+    if (featured) query = query.eq('hidden', false);
+
+    const { data, error } = await query.select('id');
     if (error) return { ok: false, error: this.explain(error.message) };
+    if (!data || data.length === 0) {
+      return {
+        ok: false,
+        error: 'That place could not be changed. It may be hidden or deleted, or your account is not an admin.',
+      };
+    }
     await this.refresh();
     return { ok: true };
   }

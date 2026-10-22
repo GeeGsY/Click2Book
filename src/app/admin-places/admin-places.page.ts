@@ -88,8 +88,9 @@ export class AdminPlacesPage {
     this.report(await this.placesService.setHidden(place.id, !place.hidden));
   }
 
-  async feature(place: Place): Promise<void> {
-    this.report(await this.placesService.setFeatured(place.id));
+  // Any number of places can be featured; Home slides through them.
+  async toggleFeatured(place: Place): Promise<void> {
+    this.report(await this.placesService.setFeatured(place.id, !place.featured));
   }
 
   // Two taps: Delete, then Yes.

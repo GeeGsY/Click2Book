@@ -24,19 +24,50 @@
     </div>
 
     <!-- 3. Featured destination -->
-    <div class="featured-card" *ngIf="featured as feat" role="button" tabindex="0" (click)="openDetails(feat)" (keydown.enter)="openDetails(feat)" [style.background-image]="'url(' + feat.image + ')'">
-      <span class="featured-badge">{{ featuredBadge }}</span>
-      <div class="featured-info">
-        <h2>{{ feat.name }}</h2>
-        <p class="featured-country">{{ feat.country }}</p>
-        <p class="featured-price">
-          <span class="price">{{ feat.price | currency: 'PHP' : 'symbol' : '1.0-0' }}</span>
-          <span class="price-unit">/ night</span>
-        </p>
+    <div
+      class="featured-carousel"
+      *ngIf="featuredList.length > 0"
+      (touchstart)="pauseSlides()"
+      (touchend)="resumeSlides()"
+      (mouseenter)="pauseSlides()"
+      (mouseleave)="resumeSlides()"
+    >
+      <div class="featured-track" #featuredTrack (scroll)="onTrackScroll()">
+        <div
+          class="featured-card"
+          *ngFor="let feat of featuredList; trackBy: trackByPlace"
+          role="button"
+          tabindex="0"
+          (click)="openDetails(feat)"
+          (keydown.enter)="openDetails(feat)"
+          [style.background-image]="'url(' + feat.image + ')'"
+        >
+          <span class="featured-badge">{{ featuredBadge }}</span>
+          <div class="featured-info">
+            <h2>{{ feat.name }}</h2>
+            <p class="featured-country">{{ feat.country }}</p>
+            <p class="featured-price">
+              <span class="price">{{ feat.price | currency: 'PHP' : 'symbol' : '1.0-0' }}</span>
+              <span class="price-unit">/ night</span>
+            </p>
+          </div>
+          <span class="featured-arrow">
+            <ion-icon name="arrow-forward"></ion-icon>
+          </span>
+        </div>
       </div>
-      <span class="featured-arrow">
-        <ion-icon name="arrow-forward"></ion-icon>
-      </span>
+
+      <!-- Dots: tap one to jump to that place -->
+      <div class="featured-dots" *ngIf="featuredList.length > 1">
+        <button
+          type="button"
+          class="dot"
+          *ngFor="let feat of featuredList; let i = index"
+          [class.active]="i === slideIndex()"
+          [attr.aria-label]="'Show featured place ' + (i + 1)"
+          (click)="goToSlide(i)"
+        ></button>
+      </div>
     </div>
 
     <!-- 4. Category filters -->
