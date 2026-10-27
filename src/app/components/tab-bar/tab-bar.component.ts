@@ -12,6 +12,8 @@ import {
   chatbubbleEllipsesOutline,
   person,
   personOutline,
+  receipt,
+  receiptOutline,
 } from 'ionicons/icons';
 
 interface Tab {
@@ -33,6 +35,7 @@ export class TabBarComponent {
   // listed here, so the bar hides itself on them and checkout stays focused.
   tabs: Tab[] = [
     { label: 'Home', path: '/home', icon: 'home-outline', iconActive: 'home' },
+    { label: 'Bookings', path: '/bookings', icon: 'receipt-outline', iconActive: 'receipt' },
     { label: 'Messages', path: '/message', icon: 'chatbubble-ellipses-outline', iconActive: 'chatbubble-ellipses' },
     { label: 'Profile', path: '/user-setting', icon: 'person-outline', iconActive: 'person' },
   ];
@@ -50,6 +53,8 @@ export class TabBarComponent {
       'chatbubble-ellipses-outline': chatbubbleEllipsesOutline,
       person: person,
       'person-outline': personOutline,
+      receipt: receipt,
+      'receipt-outline': receiptOutline,
     });
 
     this.url.set(this.clean(this.router.url));
